@@ -4,10 +4,6 @@ if not BNOT then
 	local bit = require("bit") -- for binary not
 	BNOT = bit.bnot
 end
-if not RSHIFT then
-	local bit = require("bit")
-	RSHIFT, LSHIFT = bit.rshift, bit.lshift
-end
 -- Add support for size 2 values in FCEUX
 if not memory.writeword then
 	memory.writeword = function(addr, value)

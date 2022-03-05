@@ -239,7 +239,7 @@ for i = 0x6480, 0x64a1 do
 		-- Size is assumed to be 1
 		if receiving then
 			-- value is value from the message, previousValue is current value locally
-			local receivedMask = RSHIFT(AND(value, 0xff00), 8)
+			local receivedMask = SHIFT(AND(value, 0xff00), 8)
 			local receivedValue = AND(value, 0xff)
 			-- Set any bits that should be set
 			value = OR(previousValue, AND(receivedMask, receivedValue))
@@ -254,7 +254,7 @@ for i = 0x6480, 0x64a1 do
 			-- mask is what changed
 			local sendingMask = XOR(value, previousValue)
 			-- stuff both into a single value for the message
-			value = AND(value, 0xff) + LSHIFT(sendingMask, 8)
+			value = AND(value, 0xff) + SHIFT(sendingMask, -8)
 		end
 		return allow, value
 	end} -- nameBitmap={}
@@ -279,20 +279,20 @@ spec.sync[0x64df] = {kind="bitOr", verb="visited", nameBitmap={
 }}
 
 -- Checkpoint for data synced above
-for i = 0x7d30, 0x7d5f do
-	spec.sync[i] = {}
-end
-for i = 0x7df5, 0x7df7 do
-	spec.sync[i] = {}
-end
-for i = 0x7d80, 0x7d87 do
-	spec.sync[i] = {}
-end
-for i = 0x7e00, 0x7e21 do
-	spec.sync[i] = {}
-end
-for i = 0x7e50, 0x7e5f do
-	spec.sync[i] = {}
-end
+--for i = 0x7d30, 0x7d5f do
+--	spec.sync[i] = {}
+--end
+--for i = 0x7df5, 0x7df7 do
+--	spec.sync[i] = {}
+--end
+--for i = 0x7d80, 0x7d87 do
+--	spec.sync[i] = {}
+--end
+--for i = 0x7e00, 0x7e21 do
+--	spec.sync[i] = {}
+--end
+--for i = 0x7e50, 0x7e5f do
+--	spec.sync[i] = {}
+--end
 
 return spec
