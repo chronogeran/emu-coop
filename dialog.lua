@@ -19,6 +19,15 @@ function ircDialog()
 	return {server=server, port=port, nick=nick, partner=partner, forceSend=forceSend==1}
 end
 
+function tcpDialog()
+	local res, startAsServer, server, port = iup.GetParam("Connection Settings", nil,
+		"Start Server: %" .. optionLetter .. "|No|Yes|\n" ..
+		"Connect Server: %s\n" ..
+		"Connect Port: %i\n", 0, "127.0.0.1", 5968) -- TODO defaults saved from last time
+	if res == 0 then return nil end
+	return {startAsServer=startAsServer == 1, server=server, port=port}
+end
+
 function selectDialog(specs, reason)
 	local names = ""
 	for i, v in ipairs(specs) do

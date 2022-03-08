@@ -21,6 +21,7 @@ local spec = {
 	end,
 	running = {"test", addr = 0x6c, lte = 0xfe},
 	sync = {},
+	custom = {},
 }
 
 local itemNameMap = {
@@ -99,6 +100,26 @@ local itemNameMap = {
 	"Flight"
 }
 
+-- Assumes a 1-byte value
+local deltaWithVariableMax = function(address, deltaMaxAddress, deltaMin)
+	spec.sync[address] = {kind=function(value, previousValue, receiving)
+		-- A modification of the existing delta kind to read max from memory
+		if not receiving then
+			allow = value ~= previousValue
+			value = value - previousValue
+		else
+			allow = value ~= 0
+			-- Notice: This assumes the emulator AND implementation converts negative values to 2s compliment elegantly
+			local sum = previousValue + value
+			if deltaMin and sum < deltaMin then sum = deltaMin end
+			local deltaMax = memory.readbyte(deltaMaxAddress)
+			if sum > deltaMax then sum = deltaMax end
+			value = sum
+		end
+		return allow, value
+	end}
+end
+
 updateUIWithNumber = function(addrHigh, addrLow, stringLoc, numDigits, val)
 	-- flag
 	local specifierOffset = memory.readbyte(0x0b)
@@ -170,14 +191,10 @@ spec.sync[0x3c0] = {kind="high",
 }
 
 -- HP
-spec.sync[0x3c1] = {kind="delta", deltaMin=0, deltaMax=0xff,
-	cond=function (value, size)
-		return value <= memory.readbyte(0x3c0)
-	end,
-	receiveTrigger=function (value, previousValue)
-		updateUIWithLife(value, memory.readbyte(0x3c0))
-	end
-}
+deltaWithVariableMax(0x3c1, 0x3c0, 0)
+spec.sync[0x3c1].receiveTrigger = function (value, previousValue)
+	updateUIWithLife(value, memory.readbyte(0x3c0))
+end
 
 -- Level
 spec.sync[0x421] = {kind="high", verb="gained", name="a level", 
@@ -210,14 +227,10 @@ spec.sync[0x706] = {size=2, receiveTrigger=function (value, previousValue)
 end}
 
 -- MP
-spec.sync[0x708] = {kind="delta", deltaMin=0, deltaMax=0xff,
-	cond=function (value, size)
-		return value <= memory.readbyte(0x709)
-	end,
-	receiveTrigger=function (value, previousValue)
-		updateUIWithNumber(0x2b, 0x77, 0x8c, 3, value)
-	end
-}
+deltaWithVariableMax(0x708, 0x709, 0)
+spec.sync[0x708].receiveTrigger=function (value, previousValue)
+	updateUIWithNumber(0x2b, 0x77, 0x8c, 3, value)
+end
 
 -- Max MP
 spec.sync[0x709] = {kind="high",
@@ -279,20 +292,22 @@ spec.sync[0x64df] = {kind="bitOr", verb="visited", nameBitmap={
 }}
 
 -- Checkpoint for data synced above
---for i = 0x7d30, 0x7d5f do
---	spec.sync[i] = {}
---end
---for i = 0x7df5, 0x7df7 do
---	spec.sync[i] = {}
---end
---for i = 0x7d80, 0x7d87 do
---	spec.sync[i] = {}
---end
---for i = 0x7e00, 0x7e21 do
---	spec.sync[i] = {}
---end
---for i = 0x7e50, 0x7e5f do
---	spec.sync[i] = {}
---end
+spec.custom["checkpoint"] = function(payload)
+	for i = 1,0x30 do memory.writebyte(0x7d2f + i, payload[i]) end
+	for i = 1,0x03 do memory.writebyte(0x7df4 + i, payload[0x30 + i]) end
+	for i = 1,0x08 do memory.writebyte(0x7d7f + i, payload[0x33 + i]) end
+	for i = 1,0x22 do memory.writebyte(0x7dff + i, payload[0x3b + i]) end
+	for i = 1,0x10 do memory.writebyte(0x7e4f + i, payload[0x4b + i]) end
+end
+-- Watch for 6d00 because it copies the checkpoint there after writing it
+spec.sync[0x6d00] = {kind="trigger", writeTrigger=function(value, previousValue, forceSend)
+	local payload = {}
+	for i = 1,0x30 do payload[0x00 + i] = memory.readbyte(0x7d2f + i) end -- Inventory
+	for i = 1,0x03 do payload[0x30 + i] = memory.readbyte(0x7df4 + i) end -- Life and Level
+	for i = 1,0x08 do payload[0x33 + i] = memory.readbyte(0x7d7f + i) end -- Gold/exp/hp/mp
+	for i = 1,0x22 do payload[0x3b + i] = memory.readbyte(0x7dff + i) end -- event flags and chests
+	for i = 1,0x10 do payload[0x4b + i] = memory.readbyte(0x7e4f + i) end -- doors and teleport flags
+	send("checkpoint", payload)
+end}
 
 return spec

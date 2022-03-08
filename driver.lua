@@ -8,7 +8,7 @@ end
 if not memory.writeword then
 	memory.writeword = function(addr, value)
 		memory.writebyte(addr, AND(value, 0xff))
-		memory.writebyte(addr + 1, AND(RSHIFT(value, 8), 0xff))
+		memory.writebyte(addr + 1, AND(SHIFT(value, 8), 0xff))
 	end
 end
 
