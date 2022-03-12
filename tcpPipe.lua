@@ -65,7 +65,6 @@ function TcpClientPipe:msg(s)
 end
 
 function TcpClientPipe:send(s)
-	
 	if pipeDebug then print("SEND: " .. s .. toHexString(s)) end
 
 	-- Length prefixed
@@ -155,6 +154,8 @@ function TcpServerPipe:msg(s)
 end
 
 function TcpServerPipe:send(s)
+	if s:byte(1) == 1 then return end -- Don't send hello out as server
+
 	if pipeDebug then print("SEND: " .. toHexString(s)) end
 
 	-- Send to all clients
@@ -226,7 +227,7 @@ function bytesNeededForValue(val)
 	return valueSize
 end
 
-local function isByteArray(t)
+function isByteArray(t)
 	if type(t) ~= "table" then return false end
 	local i = 0
 	for _ in pairs(t) do
