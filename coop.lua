@@ -91,7 +91,7 @@ if emu.emulating() then
 
 				-- Check input valid
 				if not data.startAsServer then
-					if not nonempty(data.server) then scrub("Server")
+					if not nonempty(data.server) then scrub("Server") end
 				end
 				if not nonzero(data.port) then scrub("Port") end
 
