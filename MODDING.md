@@ -100,6 +100,10 @@ And the following **optional** keys:
 
     This is a function that gets called once per vertical blank (but only if **running** condition is true).
 
+* **pipe** *type: string*
+
+    This defines which pipe type to use. Default is IRC. Set to "tcp" to use the TCP transport.
+
 ## Sync table
 
 The sync table is a mapping of memory addresses to sync rules. Each sync rule is a table, and that table has the following keys (all optional):

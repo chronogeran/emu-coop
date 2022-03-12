@@ -11,6 +11,7 @@ local spec = {
 	guid = "9f4d9002-51df-4a4e-966a-650adda6c3ad",
 	format = "1.2",
 	name = "Crystalis",
+	pipe = "tcp",
 	match = function(valueOverride, sizeOverride)
 		return (memory.readbyte(0xfffa) == 0xb6
 			and memory.readbyte(0xfffb) == 0xf3

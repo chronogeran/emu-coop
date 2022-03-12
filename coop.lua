@@ -43,42 +43,89 @@ if emu.emulating() then
 
 	if spec then -- If user did not hit cancel
 		print("Playing " .. spec.name)
-
-		local data = ircDialog()
-
-		if data then -- If user did not hit cancel
-			local failed = false
-
-			function scrub(invalid) errorMessage(invalid .. " not valid") failed = true end
-
+		local failed = false
+		function scrub(invalid) errorMessage(invalid .. " not valid") failed = true end
+		function trim(t)
 			-- Strip out stray whitespace (this can be a problem on FCEUX)
 			for _,v in ipairs{"server", "nick", "partner"} do
-				if data[v] then data[v] = data[v]:gsub("%s+", "") end
+				if t[v] then t[v] = t[v]:gsub("%s+", "") end
 			end
+		end
 
-			-- Check input valid
-			if not nonempty(data.server) then scrub("Server")
-			elseif not nonzero(data.port) then scrub("Port")
-			elseif not nonempty(data.nick) then scrub("Nick")
-			elseif not nonempty(data.partner) then scrub("Partner nick")
+		if spec.pipe ~= "tcp" then
+			local data = ircDialog()
+
+			if data then -- If user did not hit cancel
+				trim(data)
+
+				-- Check input valid
+				if not nonempty(data.server) then scrub("Server")
+				elseif not nonzero(data.port) then scrub("Port")
+				elseif not nonempty(data.nick) then scrub("Nick")
+				elseif not nonempty(data.partner) then scrub("Partner nick")
+				end
+
+				function connect()
+					local socket = require "socket"
+					local server = socket.tcp()
+					result, err = server:connect(data.server, data.port)
+
+					if not result then errorMessage("Could not connect to IRC: " .. err) failed = true return end
+
+					statusMessage("Connecting to server...")
+
+					mainDriver = GameDriver(spec, data.forceSend) -- Notice: This is a global, specs can use it
+					IrcPipe(data, mainDriver):wake(server)
+				end
+
+				if not failed then connect() end
+
+				if failed then gui.register(printMessage) end
 			end
+		else
+			-- Tcp
+			local data = tcpDialog()
 
-			function connect()
-				local socket = require "socket"
-				local server = socket.tcp()
-				result, err = server:connect(data.server, data.port)
+			if data then -- If user did not hit cancel
+				trim(data)
 
-				if not result then errorMessage("Could not connect to IRC: " .. err) failed = true return end
+				-- Check input valid
+				if not data.startAsServer then
+					if not nonempty(data.server) then scrub("Server")
+				end
+				if not nonzero(data.port) then scrub("Port") end
 
-				statusMessage("Connecting to server...")
+				function connect()
+					local socket = require "socket"
 
-				mainDriver = GameDriver(spec, data.forceSend) -- Notice: This is a global, specs can use it
-				IrcPipe(data, mainDriver):wake(server)
+					if data.startAsServer then
+						local server = socket.tcp()
+						result, err = server:bind("*", data.port)
+						if not result then
+							errorMessage("Could not start server: " .. err)
+							failed = true
+							return
+						end
+						result, err = server:listen(3)
+						if not result then
+							errorMessage("Could not listen on server: " .. err)
+							failed = true
+							return
+						end
+
+						mainDriver = GameDriver(spec, data.forceSend)
+						TcpServerPipe(data, mainDriver):wake(server)
+					else
+						local client = socket.tcp()
+						mainDriver = GameDriver(spec, data.forceSend)
+						TcpClientPipe(data, mainDriver):wake(client)
+					end
+				end
+
+				if not failed then connect() end
+
+				if failed then gui.register(printMessage) end
 			end
-
-			if not failed then connect() end
-
-			if failed then gui.register(printMessage) end
 		end
 	end
 else
