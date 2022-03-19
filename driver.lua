@@ -1,17 +1,5 @@
 -- ACTUAL WORK HAPPENS HERE
 
-if not BNOT then
-	local bit = require("bit") -- for binary not
-	BNOT = bit.bnot
-end
--- Add support for size 2 values in FCEUX
-if not memory.writeword then
-	memory.writeword = function(addr, value)
-		memory.writebyte(addr, AND(value, 0xff))
-		memory.writebyte(addr + 1, AND(SHIFT(value, 8), 0xff))
-	end
-end
-
 local cache = {}
 local cacheSize = {}
 

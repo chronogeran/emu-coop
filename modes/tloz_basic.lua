@@ -12,9 +12,10 @@ return {
 	format = "1.1",
 	name = "The Legend of Zelda (sync items only)",
 	match = {"stringtest", addr=0xffeb, value="ZELDA"},
+	pipe= "tcp",
 
 	running = {"test", addr = 0x12, gte = 0x4, lte = 0xD}, -- zelda 1 data. Note, doc says nothing about states between 0x7 and 0xe but they appear to be cave/level related.
-	sync = {
+	sync = {}--[[
 		-- zelda 1 data http://datacrystal.romhacking.net/wiki/The_Legend_of_Zelda:RAM_map
 		-- multi-items
 		[0x0657] = {
@@ -49,5 +50,5 @@ return {
 		[0x0674] = {name="Boomerang", kind="high"},
 		[0x0675] = {name="Magical Boomerang", kind="high"},
 		[0x0676] = {name="Magical Shield", kind="high"}, -- note: an be lost
-	},
+	},--]]
 }

@@ -9,7 +9,9 @@
 
 -- WARNING: May only work on first quest???
 
-local bit = require("bit")
+if not bit then
+	require("bit")
+end
 local math = require("math")
 
 local base_spec = require('modes.tloz_progress')

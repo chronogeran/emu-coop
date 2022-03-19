@@ -1,9 +1,12 @@
+print(_VERSION)
+
 class   = require "pl.class"
 pretty  = require "pl.pretty"
 List    = require "pl.list"
 stringx = require "pl.stringx"
 tablex  = require "pl.tablex"
 
+require "emu_compat"
 require "version"
 require "util"
 
@@ -11,6 +14,7 @@ require "modes.index"
 require "dialog"
 require "pipe"
 require "driver"
+require "emu_compat_dialog"
 
 -- PROGRAM
 
