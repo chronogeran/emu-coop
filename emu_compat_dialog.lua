@@ -66,6 +66,7 @@ if nds and snes and nes then
 	end
 
 	function refuseDialog(options)
-		iup.Message("Cannot run", "No ROM is running.")
+		print("Cannot run, No ROM is running.")
+		--iup.Message("Cannot run", "No ROM is running.")
 	end
 end

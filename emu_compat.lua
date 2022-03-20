@@ -24,13 +24,35 @@ if nds and snes and nes then
 	emu.registerexit = event.onexit
 	memory.registerwrite = function(addr, size, callback)
 		for i=1,size do
-			print("registering write at " .. (addr + i - 1))
+			--print("registering write at " .. (addr + i - 1))
 			event.onmemorywrite(callback, addr + i - 1)
 		end
 	end
 
 	-- Emu
 	emu.emulating = function() return gameinfo.getromhash() ~= nil end
+
+	-- Networking
+	socket = {}
+	socket.setAddressAndPort = function(addr, port)
+		comm.socketServerSetIp(addr)
+		comm.socketServerSetPort(port)
+	end
+	socket.setTimeout = function(timeout, handle)
+		comm.socketServerSetTimeout(timeout, handle or 0)
+	end
+	socket.listen = function(backlog)
+		comm.serverSocketListen(backlog)
+	end
+	socket.accept = function()
+		return comm.serverSocketAccept()
+	end
+	socket.send = function(str, handle)
+		comm.socketServerSend(str, handle or 0)
+	end
+	socket.receive = function(handle)
+		return comm.socketServerResponse(handle or 0)
+	end
 end
 
 -- FCEUX

@@ -8,5 +8,6 @@ modes = {
 	require "modes.tloz_all",
 	require "modes.tloz_progress",
 	require "modes.tloz_basic",
-	require "modes.crystalis"
+	require "modes.crystalis",
+	require "modes.dawn_of_sorrow"
 }

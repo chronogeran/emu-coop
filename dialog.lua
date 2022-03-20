@@ -1,4 +1,4 @@
-require "iuplua"
+--[[require "iuplua"
 
 -- Bizarre kludge: For reasons I do not understand at all, radio buttons do not work in FCEUX. Switch to menus there only
 local optionLetter = "o"
@@ -48,3 +48,4 @@ end
 function refuseDialog(options)
 	iup.Message("Cannot run", "No ROM is running.")
 end
+--]]

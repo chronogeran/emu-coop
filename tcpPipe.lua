@@ -21,40 +21,42 @@ end
 function TcpClientPipe:childWake() end
 
 function TcpClientPipe:receivePump()
-	if not self.connected then
-		-- Not the most graceful, but works
-		result, err = self.server:connect(self.data.server, self.data.port)
-		if not result and err ~= "already connected" then
-			return
-		else
-			self.connected = true
-			print("Connected to server")
-			if self.driver then self.driver:wake(self) end
-		end
-	end
+	-- if not self.connected then
+	-- 	-- Not the most graceful, but works
+	-- 	result, err = self.server:connect(self.data.server, self.data.port)
+	-- 	if not result and err ~= "already connected" then
+	-- 		return
+	-- 	else
+	-- 		self.connected = true
+	-- 		print("Connected to server")
+	-- 		if self.driver then self.driver:wake(self) end
+	-- 	end
+	-- end
 
 	while not self.dead do -- Loop until no data left
-		local length, err = self.server:receive(1) -- Pull one byte
-		if not length then
-			if err ~= "timeout" then
-				errorMessage("Connection died: " .. err)
-				self:exit()
-				return false, err
-			end
-			return true
-		end
+		-- local length, err = self.server:receive(1) -- Pull one byte
+		local msg = socket.receive(self.socketHandle)
+		-- if not length then
+		-- 	if err ~= "timeout" then
+		-- 		errorMessage("Connection died: " .. err)
+		-- 		self:exit()
+		-- 		return false, err
+		-- 	end
+		-- 	return true
+		-- end
 
 		-- Got useful data
-		local msg, err = self.server:receive(string.byte(length))
-		if not msg then
-			if err ~= "timeout" then
-				errorMessage("Connection died: " .. err)
+		-- local msg, err = self.server:receive(string.byte(length))
+		--if not msg then
+		if msg == "" then
+			-- if err ~= "timeout" then
+				errorMessage("Connection died")
 				self:exit()
-				return false, err
-			else
-				errorMessage("Timeout getting message body")
-				return false, err
-			end
+				return false
+			-- else
+			-- 	errorMessage("Timeout getting message body")
+			-- 	return false, err
+			-- end
 		end
 		self:handle(msg)
 	end
@@ -69,12 +71,13 @@ function TcpClientPipe:send(s)
 
 	-- Length prefixed
 	s = string.char(#s) .. s
-	local res, err = self.server:send(s)
-	if not res then
-		errorMessage("3 Connection died: " .. err)
-		self:exit()
-		return false
-	end
+	socket.send(s, self.socketHandle)
+	-- local res, err = self.server:send(s)
+	-- if not res then
+	-- 	errorMessage("3 Connection died: " .. err)
+	-- 	self:exit()
+	-- 	return false
+	-- end
 	return true
 end
 
@@ -101,9 +104,9 @@ function TcpClientOnServer:handle(s)
 	self.serverPipe:handle(s, self)
 end
 
-function TcpClientOnServer:wake(server)
-	self.server = server
-	self.server:settimeout(0)
+function TcpClientOnServer:wake(socketHandle)
+	self.socketHandle = server
+	socket.setTimeout(0, socketHandle)
 
 	self:childWake()
 end
@@ -125,18 +128,18 @@ end
 function TcpServerPipe:receivePump()
 	if not self.dead then
 		-- accept new clients
-		local newClient, err = self.server:accept()
-		if newClient then
+		local newClientHandle = socket.accept()
+		if newClientHandle ~= 0 then
 			local clientObject = TcpClientOnServer(self)
 			clientObject.connected = true
 			table.insert(self.clients, clientObject)
-			clientObject:wake(newClient)
+			clientObject:wake(newClientHandle)
 			print("Client connected")
 		else
-			if err ~= "timeout" then
-				errorMessage("Error during accept: " .. err)
-				self:exit()
-			end
+			-- if err ~= "timeout" then
+			-- 	errorMessage("Error during accept: " .. err)
+			-- 	self:exit()
+			-- end
 		end
 
 		-- Pump clients
@@ -197,8 +200,10 @@ Message Format
 	Default Table:
 	2: 2 byte address
 	3: 3 byte address
-	4: 2 byte address, negative value
-	5: 3 byte address, negative value
+	4: 4 byte address
+	5: 2 byte address, negative value
+	6: 3 byte address, negative value
+	7: 4 byte address, negative value
 	9: custom message
 * Body varies by opcode
 
@@ -267,9 +272,10 @@ function serializeTable(t)
 
 		-- Opcode
 		local addressSize = 2
-		if t.addr >= 0x10000 then addressSize = 3 end
+		if t.addr >= 0x1000000 then addressSize = 4
+		elseif t.addr >= 0x10000 then addressSize = 3 end
 		local opcode = addressSize
-		if t.value < 0 then opcode = opcode + 2 end
+		if t.value < 0 then opcode = opcode + 3 end
 		s = string.char(opcode)
 
 		-- Address
@@ -303,7 +309,7 @@ function deserializeTable(s)
 		
 		-- address
 		local addressSize = opcode
-		if opcode > 3 then addressSize = opcode - 2 end
+		if opcode > 4 then addressSize = opcode - 3 end
 		local addr = 0
 		for i = 1,addressSize do
 			addr = addr + SHIFT(s:byte(i + 1), -8 * (i - 1))
@@ -317,7 +323,7 @@ function deserializeTable(s)
 		for i = 1,valueSize do
 			value = value + SHIFT(s:byte(2 + addressSize + i), -8 * (i - 1))
 		end
-		if opcode > 3 then
+		if opcode > 4 then
 			-- negative
 			value = value - SHIFT(1, -valueSize * 8)
 		end

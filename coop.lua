@@ -70,11 +70,11 @@ if emu.emulating() then
 				end
 
 				function connect()
-					local socket = require "socket"
-					local server = socket.tcp()
-					result, err = server:connect(data.server, data.port)
+					socket.setAddressAndPort(data.server, data.port)
+					--result, err = server:connect(data.server, data.port)
 
-					if not result then errorMessage("Could not connect to IRC: " .. err) failed = true return end
+					--TODO error messages
+					--if not result then errorMessage("Could not connect to IRC: " .. err) failed = true return end
 
 					statusMessage("Connecting to server...")
 
@@ -100,29 +100,28 @@ if emu.emulating() then
 				if not nonzero(data.port) then scrub("Port") end
 
 				function connect()
-					local socket = require "socket"
-
 					if data.startAsServer then
-						local server = socket.tcp()
-						result, err = server:bind("*", data.port)
-						if not result then
-							errorMessage("Could not start server: " .. err)
-							failed = true
-							return
-						end
-						result, err = server:listen(3)
-						if not result then
-							errorMessage("Could not listen on server: " .. err)
-							failed = true
-							return
-						end
+						socket.setAddressAndPort("*", data.port)
+						--result, err = server:bind("*", data.port)
+						-- if not result then
+						-- 	errorMessage("Could not start server: " .. err)
+						-- 	failed = true
+						-- 	return
+						-- end
+						-- result, err = server:listen(3)
+						socket.listen(3)
+						-- if not result then
+						-- 	errorMessage("Could not listen on server: " .. err)
+						-- 	failed = true
+						-- 	return
+						-- end
 
 						mainDriver = GameDriver(spec, data.forceSend)
-						TcpServerPipe(data, mainDriver):wake(server)
+						TcpServerPipe(data, mainDriver):wake()
 					else
-						local client = socket.tcp()
+						--local client = socket.tcp()
 						mainDriver = GameDriver(spec, data.forceSend)
-						TcpClientPipe(data, mainDriver):wake(client)
+						TcpClientPipe(data, mainDriver):wake()
 					end
 				end
 
