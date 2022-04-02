@@ -214,7 +214,6 @@ function Driver:wake(pipe)
 end
 
 function Driver:sendTable(t)
-	print(pretty.write(t))
 	self.pipe:msg(serializeTable(t))
 end
 

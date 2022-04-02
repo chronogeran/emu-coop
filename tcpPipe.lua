@@ -47,7 +47,7 @@ function TcpClientPipe:receivePump()
 		local msg, err = self.socket:receive(string.byte(length))
 		if not msg then
 			if err ~= "timeout" then
-				errorMessage("Connection died on receive")
+				errorMessage("Connection died on receive: " .. err)
 				self:exit()
 				return false
 			else
@@ -65,8 +65,8 @@ function TcpClientPipe:msg(s)
 	self:send(s)
 end
 
-function TcpClientPipe:send(s)
-	if pipeDebug then print("SEND: " .. s .. toHexString(s)) end
+function TcpClientPipe:send(s, suppressDebugMessage)
+	if pipeDebug and not suppressDebugMessage then print("SEND: " .. s .. toHexString(s)) end
 
 	-- Length prefixed
 	s = string.char(#s) .. s
@@ -97,8 +97,6 @@ function TcpClientOnServer:_init(serverPipe)
 end
 
 function TcpClientOnServer:handle(s)
-	if pipeDebug then print("RECV: " .. toHexString(s)) end
-
 	self.serverPipe:handle(s, self)
 end
 
@@ -172,7 +170,7 @@ function TcpServerPipe:send(s)
 
 	-- Send to all clients
 	for i=#self.clients,1,-1 do
-		if not self.clients[i]:send(s) then
+		if not self.clients[i]:send(s, true) then
 			table.remove(self.clients, i)
 		end
 	end
@@ -231,10 +229,11 @@ Custom Message (9)
 	* x bytes table
 --]]
 
+-- Goes max to size 4
 function bytesNeededForValue(val)
 	local valueSize = 1
 	if val < 0 then val = -val * 2 end
-	while (valueSize < 8 and val >= SHIFT(1, -valueSize * 8))
+	while (valueSize < 4 and val >= SHIFT(1, -valueSize * 8))
 	do
 		valueSize = valueSize + 1
 	end

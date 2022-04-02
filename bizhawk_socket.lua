@@ -40,12 +40,13 @@ function Socket:setTimeout(timeout)
 end
 
 function Socket:send(s)
-    local sent, err = comm.rawSocketSend(self.handle, s)
+    local sent, err = comm.rawSocketSend(self.handle, stringToByteArray(s))
     return sent, err
 end
 
 function Socket:receive(length)
     local data, err = comm.rawSocketReceive(self.handle, length)
+    if data then data = byteArrayToString(data) end
     if not data and not err then return data, "timeout" end
     return data, err
 end

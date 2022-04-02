@@ -5,6 +5,7 @@ if nds and snes and nes then
 	BizHawk = true
 	-- Bit ops
 	SHIFT = function(val, amt)
+		if not amt then amt = 0 end
 		if amt < 0 then return bit.lshift(val, math.abs(amt))
 		else return bit.rshift(val, amt) end
 	end
@@ -13,6 +14,21 @@ if nds and snes and nes then
 	AND = bit.band
 	XOR = bit.bxor
 	BIT = function(num) return SHIFT(1, -num) end
+
+	stringToByteArray = function(s)
+		local t = {}
+		for i=1,#s do
+			table.insert(t, s:byte(i))
+		end
+		return t
+	end
+	byteArrayToString = function(t)
+		local s = ""
+		for i=1,#t do
+			s = s .. string.char(t[i])
+		end
+		return s
+	end
 
 	-- Memory
 	-- memory.readbyte = function(addr)
@@ -47,10 +63,11 @@ if nds and snes and nes then
 	-- instead of frame-by-frame callbacks.
 	-- Or I could run with what I have and figure out a different way to end
 	memory.registerwrite = function(addr, size, callback)
-		for i=1,size do
+		event.onmemorywrite(callback, addr)
+		--for i=1,size do
 			--print("registering write at " .. (addr + i - 1))
-			event.onmemorywrite(callback, addr + i - 1)
-		end
+			--event.onmemorywrite(callback, addr + i - 1)
+		--end
 	end
 
 	-- Emu
