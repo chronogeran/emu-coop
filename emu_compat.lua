@@ -56,12 +56,7 @@ if nds and snes and nes then
 
 	-- Events
 	gui.register = event.onframeend
-	-- emu.registerexit = event.onexit
-	emu.registerexit = function(fun) end
-	-- event.onexit is called when the script ends, not the emulator/game
-	-- So I could approach things differently, such that there's a while loop with frameadvance,
-	-- instead of frame-by-frame callbacks.
-	-- Or I could run with what I have and figure out a different way to end
+	emu.registerexit = event.onexit
 	memory.registerwrite = function(addr, size, callback)
 		event.onmemorywrite(callback, addr)
 		--for i=1,size do

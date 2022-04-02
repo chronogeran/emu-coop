@@ -14,7 +14,6 @@ function Pipe:wake(sock)
 	self.socket:setTimeout(0)
 
 	emu.registerexit(function()
-		print("exit!")
 		self:exit()
 	end)
 
@@ -29,7 +28,7 @@ end
 function Pipe:exit()
 	if pipeDebug then print("Disconnecting") end
 	self.dead = true
-	--self.server:close()
+	self.socket:close()
 	self:childExit()
 end
 

@@ -16,6 +16,7 @@ require "pipe"
 require "driver"
 require "emu_compat_dialog"
 
+pipeDebug = true
 -- PROGRAM
 
 if emu.emulating() then
@@ -111,7 +112,14 @@ if emu.emulating() then
 
 				if not failed then connect() end
 
-				if failed then gui.register(printMessage) end
+				if failed then gui.register(printMessage)
+				else
+					if BizHawk then
+						while true do
+							emu.frameadvance()
+						end
+					end
+				end
 			end
 		end
 	end

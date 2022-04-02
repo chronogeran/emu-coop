@@ -7,9 +7,7 @@ if nds and snes and nes then
 		local done = false
 		local result = nil
 
-		print("tcp dialog")
 		function onclose()
-		print("tcp dialog closed")
 			done = true
 		end
 		local f = forms.newform(500, 200, "Connection Settings", onclose)
