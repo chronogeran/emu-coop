@@ -7,13 +7,14 @@ function Pipe:_init()
 	self.buffer = ""
 end
 
-function Pipe:wake(socketHandle)
+function Pipe:wake(sock)
 	if pipeDebug then print("Connected") end
 	--statusMessage("Logging in to server...") -- This creates an unfortunate implicit contract where the driver needs to statusMessage(nil)
-	self.socketHandle = socketHandle
-	socket.setTimeout(0, socketHandle)
+	self.socket = sock
+	self.socket:setTimeout(0)
 
 	emu.registerexit(function()
+		print("exit!")
 		self:exit()
 	end)
 
@@ -213,6 +214,7 @@ function Driver:wake(pipe)
 end
 
 function Driver:sendTable(t)
+	print(pretty.write(t))
 	self.pipe:msg(serializeTable(t))
 end
 

@@ -2,6 +2,7 @@
 
 -- BizHawk
 if nds and snes and nes then
+	BizHawk = true
 	-- Bit ops
 	SHIFT = function(val, amt)
 		if amt < 0 then return bit.lshift(val, math.abs(amt))
@@ -14,14 +15,37 @@ if nds and snes and nes then
 	BIT = function(num) return SHIFT(1, -num) end
 
 	-- Memory
+	-- memory.readbyte = function(addr)
+		-- return mainmemory.readbyte(AND(addr, 0xffffff))
+	-- end
+	memory.writebyte = function(addr, val)
+		mainmemory.writebyte(AND(addr, 0xffffff), val)
+	end
+	-- memory.readword = function(addr)
+		-- return mainmemory.read_u16_le(AND(addr, 0xffffff))
+	-- end
+	memory.writeword = function(addr, val)
+		mainmemory.write_u16_le(AND(addr, 0xffffff), val)
+	end
+	memory.readdword = function(addr)
+		return mainmemory.read_u32_le(AND(addr, 0xffffff))
+	end
+	memory.writedword = function(addr, val)
+		mainmemory.write_u32_le(AND(addr, 0xffffff), val)
+	end
 	memory.readword = memory.read_u16_le
-	memory.writeword = memory.write_u16_le
-	memory.readdword = memory.read_u32_le
-	memory.writedword = memory.write_u32_le
+	-- memory.writeword = memory.write_u16_le
+	-- memory.readdword = memory.read_u32_le
+	-- memory.writedword = memory.write_u32_le
 
 	-- Events
 	gui.register = event.onframeend
-	emu.registerexit = event.onexit
+	-- emu.registerexit = event.onexit
+	emu.registerexit = function(fun) end
+	-- event.onexit is called when the script ends, not the emulator/game
+	-- So I could approach things differently, such that there's a while loop with frameadvance,
+	-- instead of frame-by-frame callbacks.
+	-- Or I could run with what I have and figure out a different way to end
 	memory.registerwrite = function(addr, size, callback)
 		for i=1,size do
 			--print("registering write at " .. (addr + i - 1))
@@ -31,28 +55,6 @@ if nds and snes and nes then
 
 	-- Emu
 	emu.emulating = function() return gameinfo.getromhash() ~= nil end
-
-	-- Networking
-	socket = {}
-	socket.setAddressAndPort = function(addr, port)
-		comm.socketServerSetIp(addr)
-		comm.socketServerSetPort(port)
-	end
-	socket.setTimeout = function(timeout, handle)
-		comm.socketServerSetTimeout(timeout, handle or 0)
-	end
-	socket.listen = function(backlog)
-		comm.serverSocketListen(backlog)
-	end
-	socket.accept = function()
-		return comm.serverSocketAccept()
-	end
-	socket.send = function(str, handle)
-		comm.socketServerSend(str, handle or 0)
-	end
-	socket.receive = function(handle)
-		return comm.socketServerResponse(handle or 0)
-	end
 end
 
 -- FCEUX
@@ -67,3 +69,6 @@ if not BNOT then
 	local bit = require("bit") -- for binary not
 	BNOT = bit.bnot
 end
+
+-- Whichever implementation determined by emulator
+require "basesocket"

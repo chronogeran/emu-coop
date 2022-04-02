@@ -21,45 +21,44 @@ end
 function TcpClientPipe:childWake() end
 
 function TcpClientPipe:receivePump()
-	-- if not self.connected then
-	-- 	-- Not the most graceful, but works
-	-- 	result, err = self.server:connect(self.data.server, self.data.port)
-	-- 	if not result and err ~= "already connected" then
-	-- 		return
-	-- 	else
-	-- 		self.connected = true
-	-- 		print("Connected to server")
-	-- 		if self.driver then self.driver:wake(self) end
-	-- 	end
-	-- end
+	if not self.connected then
+		-- Not the most graceful, but works
+		local result, err = self.socket:connect(self.data.server, self.data.port)
+		if not result and err ~= "already connected" then
+			return
+		end
+		self.connected = true
+		print("Connected to server")
+		if self.driver then self.driver:wake(self) end
+	end
 
 	while not self.dead do -- Loop until no data left
-		-- local length, err = self.server:receive(1) -- Pull one byte
-		local msg = socket.receive(self.socketHandle)
-		-- if not length then
-		-- 	if err ~= "timeout" then
-		-- 		errorMessage("Connection died: " .. err)
-		-- 		self:exit()
-		-- 		return false, err
-		-- 	end
-		-- 	return true
-		-- end
+		local length, err = self.socket:receive(1) -- Pull one byte
+		if not length then
+			if err ~= "timeout" then
+				errorMessage("Connection died on receive: " .. err)
+				self:exit()
+				return false, err
+			end
+			return true
+		end
 
 		-- Got useful data
-		-- local msg, err = self.server:receive(string.byte(length))
-		--if not msg then
-		if msg == "" then
-			-- if err ~= "timeout" then
-				errorMessage("Connection died")
+		local msg, err = self.socket:receive(string.byte(length))
+		if not msg then
+			if err ~= "timeout" then
+				errorMessage("Connection died on receive")
 				self:exit()
 				return false
-			-- else
-			-- 	errorMessage("Timeout getting message body")
-			-- 	return false, err
-			-- end
+			else
+				errorMessage("Timeout getting message body")
+				return false, err
+			end
 		end
 		self:handle(msg)
 	end
+
+	return true
 end
 
 function TcpClientPipe:msg(s)
@@ -71,13 +70,12 @@ function TcpClientPipe:send(s)
 
 	-- Length prefixed
 	s = string.char(#s) .. s
-	socket.send(s, self.socketHandle)
-	-- local res, err = self.server:send(s)
-	-- if not res then
-	-- 	errorMessage("3 Connection died: " .. err)
-	-- 	self:exit()
-	-- 	return false
-	-- end
+	local res, err = self.socket:send(s)
+	if not res then
+		errorMessage("Connection died on send: " .. err)
+		self:exit()
+		return false
+	end
 	return true
 end
 
@@ -104,9 +102,9 @@ function TcpClientOnServer:handle(s)
 	self.serverPipe:handle(s, self)
 end
 
-function TcpClientOnServer:wake(socketHandle)
-	self.socketHandle = server
-	socket.setTimeout(0, socketHandle)
+function TcpClientOnServer:wake(sock)
+	self.socket = sock
+	self.socket:setTimeout(0)
 
 	self:childWake()
 end
@@ -122,24 +120,35 @@ function TcpServerPipe:_init(data, driver)
 end
 
 function TcpServerPipe:childWake()
+	local result, err = self.socket:bind("*", self.data.port)
+	if not result then
+		errorMessage("Could not start server: " .. err)
+		return
+	end
+	result, err = self.socket:listen(3)
+	if not result then
+		errorMessage("Could not listen on server: " .. err)
+		return
+	end
+	print("Server started")
 	self.driver:wake(self)
 end
 
 function TcpServerPipe:receivePump()
 	if not self.dead then
 		-- accept new clients
-		local newClientHandle = socket.accept()
-		if newClientHandle ~= 0 then
+		local newClient, err = self.socket:accept()
+		if newClient then
 			local clientObject = TcpClientOnServer(self)
 			clientObject.connected = true
 			table.insert(self.clients, clientObject)
-			clientObject:wake(newClientHandle)
+			clientObject:wake(newClient)
 			print("Client connected")
 		else
-			-- if err ~= "timeout" then
-			-- 	errorMessage("Error during accept: " .. err)
-			-- 	self:exit()
-			-- end
+			if err ~= "timeout" then
+				errorMessage("Error during accept: " .. err)
+				self:exit()
+			end
 		end
 
 		-- Pump clients
@@ -304,7 +313,7 @@ function deserializeTable(s)
 	if opcode == 1 then
 		-- hello
 		return pretty.read(s:sub(2))
-	elseif opcode >= 2 and opcode <= 5 then
+	elseif opcode >= 2 and opcode <= 7 then
 		-- Default table
 		
 		-- address

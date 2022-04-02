@@ -205,6 +205,7 @@ function GameDriver:caughtWrite(addr, arg2, record, size)
 
 		local allow = true
 		local value = memoryRead(addr, size)
+		print ("caught write on addr " .. addr .. ", value read: " .. value)
 		local sendValue = value
 
 		if record.writeTrigger then

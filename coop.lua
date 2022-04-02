@@ -70,7 +70,8 @@ if emu.emulating() then
 				end
 
 				function connect()
-					socket.setAddressAndPort(data.server, data.port)
+					local sock = Socket()
+					sock:connect(data.server, data.port)
 					--result, err = server:connect(data.server, data.port)
 
 					--TODO error messages
@@ -79,7 +80,7 @@ if emu.emulating() then
 					statusMessage("Connecting to server...")
 
 					mainDriver = GameDriver(spec, data.forceSend) -- Notice: This is a global, specs can use it
-					IrcPipe(data, mainDriver):wake(server)
+					IrcPipe(data, mainDriver):wake(sock)
 				end
 
 				if not failed then connect() end
@@ -100,28 +101,11 @@ if emu.emulating() then
 				if not nonzero(data.port) then scrub("Port") end
 
 				function connect()
+					mainDriver = GameDriver(spec, data.forceSend)
 					if data.startAsServer then
-						socket.setAddressAndPort("*", data.port)
-						--result, err = server:bind("*", data.port)
-						-- if not result then
-						-- 	errorMessage("Could not start server: " .. err)
-						-- 	failed = true
-						-- 	return
-						-- end
-						-- result, err = server:listen(3)
-						socket.listen(3)
-						-- if not result then
-						-- 	errorMessage("Could not listen on server: " .. err)
-						-- 	failed = true
-						-- 	return
-						-- end
-
-						mainDriver = GameDriver(spec, data.forceSend)
-						TcpServerPipe(data, mainDriver):wake()
+						TcpServerPipe(data, mainDriver):wake(Socket())
 					else
-						--local client = socket.tcp()
-						mainDriver = GameDriver(spec, data.forceSend)
-						TcpClientPipe(data, mainDriver):wake()
+						TcpClientPipe(data, mainDriver):wake(Socket())
 					end
 				end
 

@@ -3,5 +3,5 @@
 pipeDebug = true
 driverDebug = true
 
-require("coop")
+require "coop"
 
