@@ -32,24 +32,33 @@ if nds and snes and nes then
 
 	-- Memory
 	local memoryDomains = memory.getmemorydomainlist()
+	local function tableHasValue(t, v)
+		for _,i in pairs(t) do
+			if i == v then
+				return true
+			end
+		end
+		return false
+	end
+	
 	local memoryDomainsTable = {}
 	-- some duck typing on memory prefixes
-	if memoryDomains:find("EWRAM") and memoryDomains:find("IWRAM") then
+	if tableHasValue(memoryDomains, "EWRAM") and tableHasValue(memoryDomains, "IWRAM") then
 		-- gba
 		memoryDomainsTable[2] = "EWRAM"
 		memoryDomainsTable[3] = "IWRAM"
 		memoryDomainsTable[6] = "VRAM"
 		memoryDomainsTable[7] = "OAM"
 		memoryDomainsTable[0xe] = "SRAM"
-	else if memoryDomains:find("Main RAM") and memoryDomains:find("ARM9 BIOS") then
+	elseif tableHasValue(memoryDomains, "Main RAM") and tableHasValue(memoryDomains, "ARM9 BIOS") then
 		-- ds
 		memoryDomainsTable[2] = "Main RAM"
-	else if memoryDomains:find("MainRAM") and memoryDomains:find("GPURAM") then
+	elseif tableHasValue(memoryDomains, "MainRAM") and tableHasValue(memoryDomains, "GPURAM") then
 		-- psx
 		memoryDomainsTable[0x80] = "Main RAM"
 	end
 
-	local getMemoryDomainFromAddress(addr)
+	local function getMemoryDomainFromAddress(addr)
 		local prefix = SHIFT(AND(addr, 0xff000000), 24)
 		return memoryDomainsTable[prefix]
 	end
