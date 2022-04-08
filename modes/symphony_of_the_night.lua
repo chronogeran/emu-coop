@@ -61,8 +61,6 @@ for i=0,0x32f do
 		local pixelX = mapX * 4
 		local pixelY = mapY * 4
 		print(pixelX .. "," .. pixelY)
-		local domain = memory.getcurrentmemorydomain()
-		memory.usememorydomain("GPURAM")
 		for x = 1,3 do
 			for y = 1,3 do
 				local offset = pixelDataOffset(pixelX + x, pixelY + y)
@@ -72,10 +70,9 @@ for i=0,0x32f do
 				print(currentValue)
 				local newValue = OR(AND(currentValue, BNOT(mask)), AND(0x11, mask))
 				print(newValue)
-				memory.write_u8(offset, newValue)
+				memory.writebyte(offset, newValue, "GPURAM")
 			end
 		end
-		memory.usememorydomain(domain)
 	end}
 end
 
