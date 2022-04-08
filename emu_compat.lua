@@ -55,28 +55,33 @@ if nds and snes and nes then
 		memoryDomainsTable[2] = "Main RAM"
 	elseif tableHasValue(memoryDomains, "MainRAM") and tableHasValue(memoryDomains, "GPURAM") then
 		-- psx
-		memoryDomainsTable[0x80] = "Main RAM"
+		memoryDomainsTable[0x80] = "MainRAM"
 	end
 
 	local function getMemoryDomainFromAddress(addr)
 		local prefix = SHIFT(AND(addr, 0xff000000), 24)
-		return memoryDomainsTable[prefix]
+		local domain = memoryDomainsTable[prefix]
+		return domain
 	end
 
 	-- Writes must use specific domain
 	local write_wrapper = function(addr, val, domain, write_function)
-		local currentDomain = memory.getcurrentmemorydomain()
 		local domainToUse = domain or getMemoryDomainFromAddress(addr)
+		if not domainToUse then
+			print("ERROR: nil memory domain")
+			return
+		end
 		memory.usememorydomain(domainToUse)
 		-- If not passing in a domain, mask the address
 		if not domain then
 			addr = AND(addr, 0xffffff)
 		end
 		write_function(addr, val)
-		memory.usememorydomain(currentDomain)
+		-- Always default back to System Bus
+		memory.usememorydomain("System Bus")
 	end
 	memory.writebyte = function(addr, val, domain)
-		write_wrapper(addr, val, domain, memory.writebyte)
+		write_wrapper(addr, val, domain, memory.write_u8)
 	end
 	memory.writeword = function(addr, val)
 		write_wrapper(addr, val, domain, memory.write_u16_le)
@@ -85,9 +90,26 @@ if nds and snes and nes then
 		write_wrapper(addr, val, domain, memory.write_u32_le)
 	end
 
-	-- Reads can use the prefixed address (system bus)
-	memory.readword = memory.read_u16_le
-	memory.readdword = memory.read_u32_le
+	-- Reads can use the prefixed address (system bus), but GPURAM isn't mapped to System Bus (I think?)
+	local read_wrapper = function(addr, domain, read_function)
+		local domainToUse = domain or "System Bus"
+		memory.usememorydomain(domainToUse)
+		local readValue = read_function(addr)
+		-- Always default back to System Bus
+		memory.usememorydomain("System Bus")
+		return readValue
+	end
+	memory.readbyte = function(addr, domain)
+		return read_wrapper(addr, domain, memory.read_u8)
+	end
+	memory.readword = function(addr, domain)
+		return read_wrapper(addr, domain, memory.read_u16_le)
+	end
+	memory.readdword = function(addr, domain)
+		return read_wrapper(addr, domain, memory.read_u32_le)
+	end
+	--memory.readword = memory.read_u16_le
+	--memory.readdword = memory.read_u32_le
 
 	-- Events
 	gui.register = event.onframeend

@@ -37,10 +37,9 @@ end
 -- Delta could be bad if both people explore the same room at the same time
 spec.sync[0x8003c760] = {size=4, kind="delta"}
 -- Map exploration
--- TODO draw map, inverted castle
+-- TODO draw actual map, figure out inverted castle
 for i=0,0x32f do
 	spec.sync[0x8006bbc4 + i] = {kind="bitOr", receiveTrigger=function(value, previousValue)
-		print("map time")
 		if value == previousValue then return end
 		local changedBits = XOR(value, previousValue)
 		local changedBitNumber = 0
@@ -57,19 +56,17 @@ for i=0,0x32f do
 		else return end
 		local mapX = (i % 0x10) * 4 + smallX
 		local mapY = math.floor(i / 0x10)
-		print(mapX .. "," .. mapY)
 		local pixelX = mapX * 4
 		local pixelY = mapY * 4
-		print(pixelX .. "," .. pixelY)
 		for x = 1,3 do
 			for y = 1,3 do
-				local offset = pixelDataOffset(pixelX + x, pixelY + y)
-				local currentValue = memory.read_u8(offset)
+				local resultPixelX = pixelX + x
+				local resultPixelY = pixelY + y
+				local offset = pixelDataOffset(resultPixelX, resultPixelY)
+				local currentValue = memory.readbyte(offset, "GPURAM")
 				local mask = 0xf
 				if x % 2 == 1 then mask = 0xf0 end
-				print(currentValue)
 				local newValue = OR(AND(currentValue, BNOT(mask)), AND(0x11, mask))
-				print(newValue)
 				memory.writebyte(offset, newValue, "GPURAM")
 			end
 		end
