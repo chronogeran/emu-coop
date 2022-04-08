@@ -9,5 +9,9 @@ modes = {
 	require "modes.tloz_progress",
 	require "modes.tloz_basic",
 	require "modes.crystalis",
-	require "modes.dawn_of_sorrow"
+	require "modes.solar_jetman",
+	require "modes.dawn_of_sorrow",
+	require "modes.portrait_of_ruin",
+	require "modes.order_of_ecclesia",
+	require "modes.symphony_of_the_night"
 }

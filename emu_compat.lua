@@ -31,28 +31,54 @@ if nds and snes and nes then
 	end
 
 	-- Memory
-	-- memory.readbyte = function(addr)
-		-- return mainmemory.readbyte(AND(addr, 0xffffff))
-	-- end
-	memory.writebyte = function(addr, val)
-		mainmemory.writebyte(AND(addr, 0xffffff), val)
+	local memoryDomains = memory.getmemorydomainlist()
+	local memoryDomainsTable = {}
+	-- some duck typing on memory prefixes
+	if memoryDomains:find("EWRAM") and memoryDomains:find("IWRAM") then
+		-- gba
+		memoryDomainsTable[2] = "EWRAM"
+		memoryDomainsTable[3] = "IWRAM"
+		memoryDomainsTable[6] = "VRAM"
+		memoryDomainsTable[7] = "OAM"
+		memoryDomainsTable[0xe] = "SRAM"
+	else if memoryDomains:find("Main RAM") and memoryDomains:find("ARM9 BIOS") then
+		-- ds
+		memoryDomainsTable[2] = "Main RAM"
+	else if memoryDomains:find("MainRAM") and memoryDomains:find("GPURAM") then
+		-- psx
+		memoryDomainsTable[0x80] = "Main RAM"
 	end
-	-- memory.readword = function(addr)
-		-- return mainmemory.read_u16_le(AND(addr, 0xffffff))
-	-- end
+
+	local getMemoryDomainFromAddress(addr)
+		local prefix = SHIFT(AND(addr, 0xff000000), 24)
+		return memoryDomainsTable[prefix]
+	end
+
+	-- Writes must use specific domain
+	local write_wrapper = function(addr, val, domain, write_function)
+		local currentDomain = memory.getcurrentmemorydomain()
+		local domainToUse = domain or getMemoryDomainFromAddress(addr)
+		memory.usememorydomain(domainToUse)
+		-- If not passing in a domain, mask the address
+		if not domain then
+			addr = AND(addr, 0xffffff)
+		end
+		write_function(addr, val)
+		memory.usememorydomain(currentDomain)
+	end
+	memory.writebyte = function(addr, val, domain)
+		write_wrapper(addr, val, domain, memory.writebyte)
+	end
 	memory.writeword = function(addr, val)
-		mainmemory.write_u16_le(AND(addr, 0xffffff), val)
-	end
-	memory.readdword = function(addr)
-		return mainmemory.read_u32_le(AND(addr, 0xffffff))
+		write_wrapper(addr, val, domain, memory.write_u16_le)
 	end
 	memory.writedword = function(addr, val)
-		mainmemory.write_u32_le(AND(addr, 0xffffff), val)
+		write_wrapper(addr, val, domain, memory.write_u32_le)
 	end
+
+	-- Reads can use the prefixed address (system bus)
 	memory.readword = memory.read_u16_le
-	-- memory.writeword = memory.write_u16_le
-	-- memory.readdword = memory.read_u32_le
-	-- memory.writedword = memory.write_u32_le
+	memory.readdword = memory.read_u32_le
 
 	-- Events
 	gui.register = event.onframeend
