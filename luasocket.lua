@@ -2,7 +2,6 @@ local socket = require("socket")
 
 class.Socket()
 function Socket:_init(sock)
-	self:super()
     if sock then
         self.socket = sock
     else

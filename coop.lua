@@ -14,9 +14,8 @@ require "modes.index"
 require "dialog"
 require "pipe"
 require "driver"
-require "emu_compat_dialog"
 
-pipeDebug = true
+--pipeDebug = true
 -- PROGRAM
 
 if emu.emulating() then
