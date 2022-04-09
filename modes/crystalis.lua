@@ -7,6 +7,11 @@
 -- Data source: https://datacrystal.romhacking.net/wiki/Crystalis:RAM_map
 -- This file is available under Creative Commons CC0
 
+--[[
+Known issues:
+* If you both get the same key item (e.g. magic spell), it will take up two slots in your inventory. Avoid this.
+--]]
+
 local spec = {
 	guid = "9f4d9002-51df-4a4e-966a-650adda6c3ad",
 	format = "1.2",
@@ -39,66 +44,40 @@ local itemNameMap = {
 	"Blizzard Bracelet",
 	"Ball of Thunder",
 	"Storm Bracelet",
-	"Carapace Shield",
-	"Bronze Shield",
-	"Platinum Shield",
-	"Mirrored Shield",
-	"Ceramic Shield",
-	"Sacred Shield",
-	"Battle Shield",
-	"Psycho Shield",
-	"Tanned Hide",
-	"Leather Armor",
-	"Bronze Armor",
-	"Platinum Armor",
-	"Soldier Suit",
-	"Ceramic Suit",
-	"Battle Armor",
-	"Psycho Armor",
-	"Medical Herb",
-	"Antidote",
-	"Lysis Plant",
-	"Fruit of Lime",
-	"Fruit of Power",
-	"Magic Ring",
-	"Fruit of Repun",
-	"Warp Boots",
-	"Statue of Onyx",
-	"Opel Statue",
-	"Insect Flute",
-	"Flute of Lime",
-	"Gas Mask",
-	"Power Ring",
-	"Warrior Ring",
-	"Iron Necklace",
-	"Deo's Pendant",
-	"Rabbit Boots",
-	"Leather Boots",
-	"Shield Ring",
-	"Alarm Flute",
-	"Windmill Key",
-	"Key to Prison",
-	"Key to Stxy",
-	"Fog Lamp",
-	"Shell Flute",
-	"Eye Glasses",
-	"Broken Statue",
-	"Glowing Lamp",
-	"Statue of Gold",
-	"Love Pendant",
-	"Kirisa Plant",
-	"Ivory Statue",
-	"Bow of Moon",
-	"Bow of Sun",
-	"Bow of Truth",
-	"Refresh",
-	"Paralysis",
-	"Telepathy",
-	"Teleport",
-	"Recover",
-	"Barrier",
-	"Change",
-	"Flight"
+	[37]="Statue of Onyx",
+	[39]="Insect Flute",
+	[40]="Flute of Lime",
+	[41]="Gas Mask",
+	[42]="Power Ring",
+	[43]="Warrior Ring",
+	[44]="Iron Necklace",
+	[45]="Deo's Pendant",
+	[46]="Rabbit Boots",
+	[47]="Leather Boots",
+	[48]="Shield Ring",
+	[50]="Windmill Key",
+	[51]="Key to Prison",
+	[52]="Key to Stxy",
+	[53]="Fog Lamp",
+	[54]="Shell Flute",
+	[55]="Eye Glasses",
+	[56]="Broken Statue",
+	[57]="Glowing Lamp",
+	[58]="Statue of Gold",
+	[59]="Love Pendant",
+	[60]="Kirisa Plant",
+	[61]="Ivory Statue",
+	[62]="Bow of Moon",
+	[63]="Bow of Sun",
+	[64]="Bow of Truth",
+	[65]="Refresh",
+	[66]="Paralysis",
+	[67]="Telepathy",
+	[68]="Teleport",
+	[69]="Recover",
+	[70]="Barrier",
+	[71]="Change",
+	[72]="Flight"
 }
 
 -- Assumes a 1-byte value
@@ -185,8 +164,7 @@ updateUIWithLife = function(life, maxLife)
 end
 
 -- Max HP
-spec.sync[0x3c0] = {kind="high",
-	receiveTrigger=function (value, previousValue)
+spec.sync[0x3c0] = {receiveTrigger=function (value, previousValue)
 		updateUIWithLife(memory.readbyte(0x3c1), value)
 	end
 }
@@ -198,15 +176,17 @@ spec.sync[0x3c1].receiveTrigger = function (value, previousValue)
 end
 
 -- Level
-spec.sync[0x421] = {kind="high", verb="gained", name="a level", 
+spec.sync[0x421] = {verb="gained", name="a level", 
 	receiveTrigger=function (value, previousValue)
-		-- Grant level up stat boosts. Just 1 per level.
-		local previousAttack = memory.readbyte(0x3e1)
-		local previousDefense1 = memory.readbyte(0x400)
-		local previousDefense2 = memory.readbyte(0x401)
-		memory.writebyte(0x3e1, previousAttack + 1)
-		memory.writebyte(0x400, previousDefense1 + 1)
-		memory.writebyte(0x401, previousDefense2 + 1)
+		if value == previousValue + 1 then
+			-- Grant level up stat boosts. Just 1 per level.
+			local previousAttack = memory.readbyte(0x3e1)
+			local previousDefense1 = memory.readbyte(0x400)
+			local previousDefense2 = memory.readbyte(0x401)
+			memory.writebyte(0x3e1, previousAttack + 1)
+			memory.writebyte(0x400, previousDefense1 + 1)
+			memory.writebyte(0x401, previousDefense2 + 1)
+		end
 		-- Update UI
 		updateUIWithNumber(0x2b, 0x39, 0x80, 2, value)
 	end
@@ -234,8 +214,7 @@ spec.sync[0x708].receiveTrigger=function (value, previousValue)
 end
 
 -- Max MP
-spec.sync[0x709] = {kind="high",
-	receiveTrigger=function (value, previousValue)
+spec.sync[0x709] = {receiveTrigger=function (value, previousValue)
 		updateUIWithNumber(0x2b, 0x7b, 0x8f, 3, value)
 	end
 }

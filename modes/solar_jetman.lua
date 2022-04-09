@@ -10,6 +10,7 @@ local spec = {
 	guid = "316df463-cac8-4894-acbd-0aede5921535",
 	format = "1.2",
 	name = "Solar Jetman",
+	pipe = "tcp",
 	match = function(valueOverride, sizeOverride)
 		return (memory.readbyte(0xffaa) == 0x68
 			and memory.readbyte(0xffab) == 0x40
