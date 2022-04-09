@@ -4,13 +4,28 @@ This is the source code repo for emu-coop. **[Probably you would rather be looki
 
 This directory contains some Lua scripts that, when loaded by a compliant emulator such as snes9x-rr or FCEUX, can synchronize emulator state over the internet (allowing "cooperative" playthroughs of single-player games).
 
-Each game you want to use this with requires a "mode" file in the modes/ directory. Currently included are modes for Link to the Past, the Link to the Past "Randomizer", Zelda 1, Super Metroid, and Crystalis. **WARNING: Modes are PROGRAMS, like a .exe file. Do not install a mode file unless it came from someone you know and trust.** 
+Each game you want to use this with requires a "mode" file in the modes/ directory. **WARNING: Modes are PROGRAMS, like a .exe file. Do not install a mode file unless it came from someone you know and trust.** 
 
 To run, run coop.lua. To run with additional debug messages (more verbose errors, and visibility for every message sent) run debug.lua instead.
 
+## Supported Emulators
+
+**Imporant: This is built to run with a fork of BizHawk. [Download it here.](https://github.com/chronogeran/BizHawk)**
+
+Please note that not every core in BizHawk is supported. Use the indicated core when playing the given console.
+
+Currently supported emulators/consoles:
+* BizHawk
+	* NES: NesHawk
+	* DS: melonDS
+	* PSX: Octoshock
+* FCEUXWin32 (NES)
+* snes9x-rr (SNES)
+
 ## Author / License
 
-These files were written by <<andi.m.mcclure@gmail.com>>. The "tloz_" modes (Zelda 1) were written by megmacAttack.
+This is Chronogeran's fork of emu-coop. The original was written by
+<<andi.m.mcclure@gmail.com>>. The "tloz_" modes (Zelda 1) were written by megmacAttack.
 
 Big thanks to:
 * The LTTP Randomizer team, esp. Mike Trethewey, Zarby89 and Karkat, for information
