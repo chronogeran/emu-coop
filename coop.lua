@@ -57,7 +57,7 @@ if emu.emulating() then
 			end
 		end
 
-		if spec.pipe ~= "tcp" then
+		if spec.pipe == "irc" then
 			local data = ircDialog()
 
 			if data then -- If user did not hit cancel
