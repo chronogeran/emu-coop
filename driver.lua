@@ -235,6 +235,8 @@ function GameDriver:handleTable(t)
 			if t.guid ~= self.spec.guid then
 				self.pipe:abort("Partner has an incompatible .lua file for this game.")
 				print("Partner's game mode file has guid:\n" .. tostring(t.guid) .. "\nbut yours has:\n" .. tostring(self.spec.guid))
+			else
+				self.pipe:confirm()
 			end
 		elseif t[1] == "custom" then
 			if t[2] then

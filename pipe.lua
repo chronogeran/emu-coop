@@ -32,8 +32,18 @@ function Pipe:exit()
 	self:childExit()
 end
 
+function Pipe:abort(msg)
+	self:exit()
+	errorMessage(msg)
+end
+
 function Pipe:fail(err)
 	self:exit()
+end
+
+-- Called when the hello message matches up
+function Pipe:confirm()
+	self.confirmed = true
 end
 
 function Pipe:send(s)
@@ -82,7 +92,7 @@ function Pipe:handle() end
 
 -- TODO: nickserv, reconnect logic, multiline messages
 
-local IrcState = {login = 1, searching = 2, handshake = 3, piping = 4, aborted=5}
+local IrcState = {login = 1, searching = 2, handshake = 3, piping = 4}
 local IrcHello = "!! Hi, I'm a matchmaking bot for SNES games. This user thinks you're running the same bot and typed in your nick. If you're a human and seeing this, they made a mistake!"
 local IrcConfirm = "@@ " .. version.ircPipe
 
@@ -104,12 +114,6 @@ function IrcPipe:childTick()
 	if self.state == IrcState.piping then
 		self.driver:tick()
 	end
-end
-
-function IrcPipe:abort(msg)
-	self.state = IrcState.aborted -- FIXME: I guess this is maybe redundant with .dead?
-	self:exit()
-	errorMessage(msg)
 end
 
 function IrcPipe:handle(s)

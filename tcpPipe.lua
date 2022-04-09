@@ -20,6 +20,12 @@ end
 
 function TcpClientPipe:childWake() end
 
+function TcpClientPipe:childTick()
+	if self.connected and self.confirmed then
+		self.driver:tick()
+	end
+end
+
 function TcpClientPipe:receivePump()
 	if not self.connected then
 		-- Not the most graceful, but works
@@ -82,6 +88,12 @@ end
 function TcpClientPipe:handle(s)
 	if pipeDebug then print("RECV: " .. toHexString(s)) end
 
+	if #s == 0 then
+		print("Server disconnected")
+		self:exit()
+		return
+	end
+
 	t = deserializeTable(s)
 	self.driver:handle(t)
 	
@@ -106,6 +118,8 @@ function TcpClientOnServer:wake(sock)
 
 	self:childWake()
 end
+
+function TcpClientOnServer:childTick() end
 
 -- TCP Server Pipe
 
@@ -132,6 +146,12 @@ function TcpServerPipe:childWake()
 	self.driver:wake(self)
 end
 
+function TcpServerPipe:childTick()
+	if #self.clients > 0 and self.confirmed then
+		self.driver:tick()
+	end
+end
+
 function TcpServerPipe:receivePump()
 	if not self.dead then
 		-- accept new clients
@@ -142,6 +162,7 @@ function TcpServerPipe:receivePump()
 			table.insert(self.clients, clientObject)
 			clientObject:wake(newClient)
 			print("Client connected")
+			clientObject:send(self.helloMessage)
 		else
 			if err ~= "timeout" then
 				errorMessage("Error during accept: " .. err)
@@ -156,7 +177,6 @@ function TcpServerPipe:receivePump()
 			end
 		end
 	end
-
 end
 
 function TcpServerPipe:msg(s)
@@ -164,7 +184,11 @@ function TcpServerPipe:msg(s)
 end
 
 function TcpServerPipe:send(s)
-	if s:byte(1) == 1 then return end -- Don't send hello out as server
+	-- Server needs to send hello to each new client, not right on startup
+	if s:byte(1) == 1 then
+		self.helloMessage = s
+		return
+	end
 
 	if pipeDebug then print("SEND: " .. toHexString(s)) end
 
@@ -182,6 +206,9 @@ function TcpServerPipe:handle(s, originClient)
 	-- Handle for local game
 	t = deserializeTable(s)
 	self.driver:handle(t)
+
+	-- Don't need to replicate hello out
+	if s:byte(1) == 1 then return end
 
 	-- Send to all other clients
 	for i=#self.clients,1,-1 do
