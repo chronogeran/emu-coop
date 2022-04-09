@@ -190,6 +190,8 @@ function TcpServerPipe:send(s)
 		return
 	end
 
+	if #self.clients == 0 or not self.confirmed then return end
+
 	if pipeDebug then print("SEND: " .. toHexString(s)) end
 
 	-- Send to all clients

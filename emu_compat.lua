@@ -42,23 +42,28 @@ if nds and snes and nes then
 	end
 	
 	local memoryDomainsTable = {}
+	local console = nil
 	-- some duck typing on memory prefixes
 	if tableHasValue(memoryDomains, "EWRAM") and tableHasValue(memoryDomains, "IWRAM") then
-		-- gba
+		console = "gba"
 		memoryDomainsTable[2] = "EWRAM"
 		memoryDomainsTable[3] = "IWRAM"
 		memoryDomainsTable[6] = "VRAM"
 		memoryDomainsTable[7] = "OAM"
 		memoryDomainsTable[0xe] = "SRAM"
 	elseif tableHasValue(memoryDomains, "Main RAM") and tableHasValue(memoryDomains, "ARM9 BIOS") then
-		-- ds
+		console = "ds"
 		memoryDomainsTable[2] = "Main RAM"
 	elseif tableHasValue(memoryDomains, "MainRAM") and tableHasValue(memoryDomains, "GPURAM") then
-		-- psx
+		console = "psx"
 		memoryDomainsTable[0x80] = "MainRAM"
+	elseif tableHasValue(memoryDomains, "RAM") and tableHasValue(memoryDomains, "PPU Bus") then
+		console = "nes"
+		-- system bus is writable
 	end
 
 	local function getMemoryDomainFromAddress(addr)
+		if console == "nes" then return "System Bus" end
 		local prefix = SHIFT(AND(addr, 0xff000000), 24)
 		local domain = memoryDomainsTable[prefix]
 		return domain
@@ -71,14 +76,11 @@ if nds and snes and nes then
 			print("ERROR: nil memory domain")
 			return
 		end
-		memory.usememorydomain(domainToUse)
 		-- If not passing in a domain, mask the address
 		if not domain then
 			addr = AND(addr, 0xffffff)
 		end
-		write_function(addr, val)
-		-- Always default back to System Bus
-		memory.usememorydomain("System Bus")
+		write_function(addr, val, domainToUse)
 	end
 	memory.writebyte = function(addr, val, domain)
 		write_wrapper(addr, val, domain, memory.write_u8)
@@ -91,25 +93,9 @@ if nds and snes and nes then
 	end
 
 	-- Reads can use the prefixed address (system bus), but GPURAM isn't mapped to System Bus (I think?)
-	local read_wrapper = function(addr, domain, read_function)
-		local domainToUse = domain or "System Bus"
-		memory.usememorydomain(domainToUse)
-		local readValue = read_function(addr)
-		-- Always default back to System Bus
-		memory.usememorydomain("System Bus")
-		return readValue
-	end
-	memory.readbyte = function(addr, domain)
-		return read_wrapper(addr, domain, memory.read_u8)
-	end
-	memory.readword = function(addr, domain)
-		return read_wrapper(addr, domain, memory.read_u16_le)
-	end
-	memory.readdword = function(addr, domain)
-		return read_wrapper(addr, domain, memory.read_u32_le)
-	end
-	--memory.readword = memory.read_u16_le
-	--memory.readdword = memory.read_u32_le
+	memory.readbyte = memory.read_u8
+	memory.readword = memory.read_u16_le
+	memory.readdword = memory.read_u32_le
 
 	-- Events
 	gui.register = event.onframeend
