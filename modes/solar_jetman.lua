@@ -86,27 +86,102 @@ for i = 0x513, 0x52c do
 		return onSameMapAsPartner()
 	end}
 end
-
 -- Persistent object positions
-spec.custom["persistentObjectPosition"] = function(payload)
-	if not onSameMapAsPartner() then return end
-	local persistentIndex, x, y = payload[1], payload[2], payload[3]
-	memory.writebyte(0x52d + persistentIndex, AND(x, 0xff))
-	memory.writebyte(0x561 + persistentIndex, AND(SHIFT(x, 8), 0xff))
-	memory.writebyte(0x547 + persistentIndex, AND(y, 0xff))
-	memory.writebyte(0x57b + persistentIndex, AND(SHIFT(y, 8), 0xff))
+for i = 0x52d, 0x594 do
+	spec.sync[i] = {cond=function(value, size)
+		-- Only sync objects if on same map
+		return onSameMapAsPartner()
+	end}
 end
--- Send when object released by tractor beam
-spec.sync[0x66] = {kind="trigger", writeTrigger=function(value, previousValue, forceSend)
-	if value == 0 and previousValue > 0 and onSameMapAsPartner() then
-		local objectIndex = previousValue
-		local persistentIndex = memory.readbyte(0x393 + objectIndex)
-		local x, y = 
-			memory.readbyte(0x52d + persistentIndex) + SHIFT(memory.readbyte(0x561 + persistentIndex), -8),
-			memory.readbyte(0x547 + persistentIndex) + SHIFT(memory.readbyte(0x57b + persistentIndex), -8)
-		send("persistentObjectPosition", {persistentIndex, x, y})
+
+-- Local objects
+
+local partnerLocalObjectTypes={} -- Not using this. Do I need to?
+local partnerLocalObjectIndices={}
+local ObjectTypeAddr = 0x322
+local ObjectIndexAddr = 0x39e
+local WorldObjectType = 0x0a
+local ObjectXLowAddr = 0x20b
+local ObjectXHighAddr = ObjectXLowAddr + 0x1f
+local ObjectYLowAddr = ObjectXHighAddr + 0x3e
+local ObjectYHighAddr = ObjectYLowAddr + 0x1f
+
+local shouldSyncPersistentObject = function(offset)
+	return onSameMapAsPartner() and memory.readbyte(ObjectTypeAddr + offset) == WorldObjectType
+end
+
+for i = ObjectTypeAddr, ObjectTypeAddr + 3 do
+	spec.sync[i] = {kind=function(value, previousValue, receiving)
+		local allow = false
+		if receiving then
+			-- Allow is always false on receive. We're just keeping track.
+			if onSameMapAsPartner() then
+				partnerLocalObjectTypes[i - ObjectTypeAddr] = value
+			end
+		else
+			-- Only sync objects if on same map
+			allow = value ~= previousValue and onSameMapAsPartner()
+		end
+		return allow, value
+	end}
+end
+for i = ObjectIndexAddr, ObjectIndexAddr + 3 do
+	spec.sync[i] = {kind=function(value, previousValue, receiving)
+		local allow = false
+		local offset = i - ObjectIndexAddr
+		if receiving then
+			if onSameMapAsPartner() then
+				partnerLocalObjectIndices[offset] = value
+			end
+		else
+			allow = shouldSyncPersistentObject(offset)
+		end
+		return allow, value
+	end}
+end
+
+local syncObjectPosition = function(startAddress, endAddress)
+	for i = startAddress, endAddress do
+		spec.sync[i] = {kind=function(value, previousValue, receiving)
+			local allow = false
+			local offset = i - startAddress
+
+			if receiving then
+				-- Check map on both sides just to be safe
+				if onSameMapAsPartner() then
+					-- The same object may be loaded in two different indices
+					-- So match them up
+					local receivingObjectIndex = partnerLocalObjectIndices[offset]
+					local localOffset = 0
+					local found = false
+					while (not found and localOffset <= 3)
+					do
+						if memory.readbyte(ObjectTypeAddr + localOffset) == WorldObjectType
+							and memory.readbyte(ObjectIndexAddr + localOffset) == receivingObjectIndex then
+							found = true
+						else
+							localOffset = localOffset + 1
+						end
+					end
+
+					-- Custom write instead of allow true
+					if found then
+						memory.writebyte(startAddress + localOffset, value)
+					end
+				end
+			else
+				allow = shouldSyncPersistentObject(offset)
+			end
+
+			return allow, value
+		end}
 	end
-end}
+end
+
+syncObjectPosition(ObjectXLowAddr, ObjectXLowAddr + 3)
+syncObjectPosition(ObjectXHighAddr, ObjectXHighAddr + 3)
+syncObjectPosition(ObjectYLowAddr, ObjectYLowAddr + 3)
+syncObjectPosition(ObjectYHighAddr, ObjectYHighAddr + 3)
 
 -- When loading into other maps in the same world,
 -- item collection and enemies defeated are saved for when
