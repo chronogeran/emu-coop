@@ -22,6 +22,28 @@ Currently supported emulators/consoles:
 * FCEUXWin32 (NES)
 * snes9x-rr (SNES)
 
+## Supported Games
+
+* Crystalis (NES)
+* The Legend of Zelda (NES)
+* Solar Jetman (NES)
+* The Legend of Zelda: A Link to the Past (SNES)
+* Link to the Past Randomizer (SNES)
+* Super Metroid (SNES)
+* Castlevania: Symphony of the Night (PSX)
+* Castlevania: Dawn of Sorrow (DS)
+* Castlevania: Portrait of Ruin (DS)
+* Castlevania: Order of Ecclesia (DS)
+
+Contributions adding more games are welcome. Any game with a good degree of non-linearity or backtracking will work.
+
+## See Also
+
+Other similar projects providing access to multiplayer modes:
+* http://multitroid.com/
+* https://github.com/milesthenerd/bizhawk-co-op-metroid-fusion
+* https://github.com/milesthenerd/AM2R-Multitroid
+
 ## Author / License
 
 This is Chronogeran's fork of emu-coop. The original was written by
