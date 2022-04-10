@@ -23,6 +23,14 @@ local spec = {
 	custom = {},
 }
 
+spec.nextFrameTasks = {}
+spec.tick = function()
+	for k,v in pairs(spec.nextFrameTasks) do
+		v()
+	end
+	spec.nextFrameTasks = {}
+end
+
 -- Events
 -- TODO alignment, range
 for i=0,0xff,4 do
@@ -33,13 +41,27 @@ local function pixelDataOffset(pixelX, pixelY)
 	return 0x89e80 + (pixelY * 0x800) + math.floor(pixelX / 2)
 end
 
+spec.custom["mapData"] = function(payload)
+	local pixelX, pixelY = payload[1], payload[2]
+	local i = 3
+	for y=pixelY, pixelY + 4 do
+		for x=pixelX, pixelX + 4, 2 do
+			-- TODO perhaps only write the first nibble on the third x byte
+			local offset = pixelDataOffset(x, y)
+			memory.writebyte(offset, payload[i], "GPURAM")
+			i = i + 1
+		end
+	end
+end
+
 -- Rooms count
 -- Delta could be bad if both people explore the same room at the same time
 spec.sync[0x8003c760] = {size=4, kind="delta"}
 -- Map exploration
--- TODO draw actual map, figure out inverted castle
+-- TODO figure out inverted castle
 for i=0,0x32f do
-	spec.sync[0x8006bbc4 + i] = {kind="bitOr", receiveTrigger=function(value, previousValue)
+	spec.sync[0x8006bbc4 + i] = {kind="bitOr", 
+	writeTrigger=function(value, previousValue, forceSend)
 		if value == previousValue then return end
 		local changedBits = XOR(value, previousValue)
 		local changedBitNumber = 0
@@ -57,19 +79,19 @@ for i=0,0x32f do
 		local mapX = (i % 0x10) * 4 + smallX
 		local mapY = math.floor(i / 0x10)
 		local pixelX = mapX * 4
-		local pixelY = mapY * 4
-		for x = 1,3 do
-			for y = 1,3 do
-				local resultPixelX = pixelX + x
-				local resultPixelY = pixelY + y
-				local offset = pixelDataOffset(resultPixelX, resultPixelY)
-				local currentValue = memory.readbyte(offset, "GPURAM")
-				local mask = 0xf
-				if x % 2 == 1 then mask = 0xf0 end
-				local newValue = OR(AND(currentValue, BNOT(mask)), AND(0x11, mask))
-				memory.writebyte(offset, newValue, "GPURAM")
+		local pixelY = mapY * 4 + 1
+		table.insert(spec.nextFrameTasks, function()
+			local payload = {pixelX, pixelY}
+			local i = 3
+			for y=pixelY, pixelY + 4 do
+				for x=pixelX, pixelX + 4, 2 do
+					local offset = pixelDataOffset(x, y)
+					payload[i] = memory.readbyte(offset, "GPURAM")
+					i = i + 1
+				end
 			end
-		end
+			send("mapData", payload)
+		end)
 	end}
 end
 
