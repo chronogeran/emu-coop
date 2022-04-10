@@ -208,7 +208,7 @@ function GameDriver:caughtWrite(addr, arg2, record, size)
 		local sendValue = value
 
 		if record.writeTrigger then
-			record.writeTrigger(value, previousValue, false)
+			record.writeTrigger(value, cache[addr], false)
 		end
 
 		if cache[addr] then -- It should be impossible for this to be false
