@@ -25,31 +25,36 @@ spec.tick = function()
 	spec.nextFrameTasks = {}
 end
 
+local CurrentMapIdAddress = 0x02111785
+local MapExplorationDataAddress = 0x02111794
+local MapPixelDataAddress = 0x02136900
+local MapPixelDataSize = 0x6000
+local MapTileRowSize = 0x400
+local MapTileSize = 0x20
+
 -- Pixels are stored 4 bits per pixel,
 -- 8x8 pixel tiles
 function pixelDataOffset(x, y)
 	local tileRowIndex = math.floor(y / 8)
 	local tileColIndex = math.floor(x / 8)
-	return 0x02136900 + tileRowIndex * 0x400 + tileColIndex * 0x20 + (y % 8) * 4 + math.floor((x % 8) / 2)
+	return MapPixelDataAddress + tileRowIndex * MapTileRowSize + tileColIndex * MapTileSize + (y % 8) * 4 + math.floor((x % 8) / 2)
 end
 
-function pixelCoordinates(pixelOffset, isLeftPixel)
-	local localOffset = pixelOffset - 0x02136900
-	local tileX = math.floor((localOffset % 0x400) / 0x20)
+function pixelCoordinates(pixelOffset)
+	local localOffset = pixelOffset - MapPixelDataAddress
+	local tileX = math.floor((localOffset % MapTileRowSize) / MapTileSize)
 	local pixelX = (tileX * 8) + (localOffset % 4) * 2
-	if isLeftPixel then pixelX = pixelX + 1 end
-	local tileY = math.floor(localOffset / 0x400)
-	local pixelY = tileY * 8 + math.floor((localOffset % 0x20) / 4)
+	local tileY = math.floor(localOffset / MapTileRowSize)
+	local pixelY = tileY * 8 + math.floor((localOffset % MapTileSize) / 4)
 	return pixelX, pixelY
 end
 
 spec.custom["mapData"] = function(payload)
 	local mapId, pixelX, pixelY = payload[1], payload[2], payload[3]
-	if mapId ~= memory.readbyte(0x02111785) then return end
+	if mapId ~= memory.readbyte(CurrentMapIdAddress) then return end
 	local i = 4
 	for y=pixelY, pixelY + 4 do
 		for x=pixelX, pixelX + 4, 2 do
-			-- TODO perhaps only write the first nibble on the third x byte
 			local offset = pixelDataOffset(x, y)
 			memory.writebyte(offset, payload[i])
 			i = i + 1
@@ -58,8 +63,8 @@ spec.custom["mapData"] = function(payload)
 end
 
 function sendMapData(localOffset)
-	local pixelX, pixelY = pixelCoordinates(0x02136900 + localOffset)
-	local payload = {memory.readbyte(0x02111785), pixelX, pixelY}
+	local pixelX, pixelY = pixelCoordinates(MapPixelDataAddress + localOffset)
+	local payload = {memory.readbyte(CurrentMapIdAddress), pixelX, pixelY}
 	local i = 4
 	for y=pixelY, pixelY + 4 do
 		for x=pixelX, pixelX + 4, 2 do
@@ -73,12 +78,12 @@ end
 
 -- Map exploration
 for i=0,0x1d8 do
-	spec.sync[0x02111794 + i] = {kind="bitOr", writeTrigger=function(value, previousValue)
+	spec.sync[MapExplorationDataAddress + i] = {kind="bitOr", writeTrigger=function(value, previousValue)
 		if value == previousValue then return end
-		local pixelDataBefore = memory.read_bytes_as_array(0x02136900, 0x6000)
+		local pixelDataBefore = memory.read_bytes_as_array(MapPixelDataAddress, MapPixelDataSize)
 		table.insert(spec.nextFrameTasks, function()
-			local pixelDataAfter = memory.read_bytes_as_array(0x02136900, 0x6000)
-			for i=2,0x6000 do
+			local pixelDataAfter = memory.read_bytes_as_array(MapPixelDataAddress, MapPixelDataSize)
+			for i=2,MapPixelDataSize do
 				if pixelDataBefore[i] ~= pixelDataAfter[i] then
 					sendMapData(i - 1) -- account for 1-based array
 					return
