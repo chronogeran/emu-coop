@@ -12,8 +12,6 @@ local spec = {
 	name = "Castlevania: Dawn of Sorrow",
 	pipe = "tcp",
 	match = {"stringtest", addr=0x0219c980, value="CASTLEVANIA1ACVE"},
-	-- por {"stringtest", addr=0x3ffa80, value="CASTLEVANIA2ACBE"},
-	-- OOE {"stringtest", addr=0x3ffa80, value="CASTLEVANIA3YR9E"},
 	running = {"test", addr = 0x020f703c, size=4, gte = 1}, -- Using game clock as running test
 	sync = {},
 	custom = {},

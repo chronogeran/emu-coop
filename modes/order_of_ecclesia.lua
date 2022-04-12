@@ -11,7 +11,7 @@ local spec = {
 	format = "1.2",
 	name = "Castlevania: Order of Ecclesia",
 	pipe = "tcp",
-	match = {"stringtest", addr=0x3ffa80, value="CASTLEVANIA3YR9E"},
+	match = {"stringtest", addr=0x023ffa80, value="CASTLEVANIA3YR9E"},
 	running = {"test", addr = 0x02100374, size=4, gte = 1}, -- Using game clock as running test
 	sync = {},
 	custom = {},
