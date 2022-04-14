@@ -9,6 +9,7 @@ modes = {
 	require "modes.tloz_progress",
 	require "modes.tloz_basic",
 	require "modes.crystalis",
+	require "modes.castlevania2",
 	require "modes.solar_jetman",
 	require "modes.dawn_of_sorrow",
 	require "modes.portrait_of_ruin",
