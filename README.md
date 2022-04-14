@@ -25,6 +25,7 @@ Currently supported emulators/consoles:
 ## Supported Games
 
 * Crystalis (NES)
+* Castlevania II: Simon's Quest (NES)
 * The Legend of Zelda (NES)
 * Solar Jetman (NES)
 * The Legend of Zelda: A Link to the Past (SNES)
