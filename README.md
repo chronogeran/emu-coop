@@ -24,10 +24,16 @@ Currently supported emulators/consoles:
 
 ## Supported Games
 
+* Blaster Master (NES)
 * Crystalis (NES)
 * Castlevania II: Simon's Quest (NES)
+* Goonies II (NES)
 * The Legend of Zelda (NES)
+* Zelda II: The Adventure of Link (NES)
+* Legacy of the Wizard (NES)
+* Metroid (NES)
 * Solar Jetman (NES)
+* Solstice (NES)
 * The Legend of Zelda: A Link to the Past (SNES)
 * Link to the Past Randomizer (SNES)
 * Super Metroid (SNES)
