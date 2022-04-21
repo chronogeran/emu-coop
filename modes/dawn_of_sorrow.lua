@@ -17,6 +17,22 @@ local spec = {
 	custom = {},
 }
 
+spec.nextFrameTasks = {}
+spec.tick = function()
+	for k,v in pairs(spec.nextFrameTasks) do
+		v()
+	end
+	spec.nextFrameTasks = {}
+end
+
+local CurrentMapIdAddress = 0x02111785 -- TODO unknown
+local MapExplorationDataAddress = 0x020f6e34
+local MapExplorationDataExtent = 0x19b
+local MapPixelDataAddress = 0x0210f040
+local MapPixelDataSize = 0x6000
+local MapTileRowSize = 0x400
+local MapTileSize = 0x20
+
 -- Pixels are stored 4 bits per pixel,
 -- 8x8 pixel tiles
 function getPixelByteIndex(x, y)
@@ -25,47 +41,70 @@ function getPixelByteIndex(x, y)
 	return 0x10f040 + tileRowIndex * 0x400 + tileColIndex * 0x20 + (y % 8) * 4 + math.floor((x % 8) / 2)
 end
 
+-- Pixels are stored 4 bits per pixel,
+-- 8x8 pixel tiles
+function pixelDataOffset(x, y)
+	local tileRowIndex = math.floor(y / 8)
+	local tileColIndex = math.floor(x / 8)
+	return MapPixelDataAddress + tileRowIndex * MapTileRowSize + tileColIndex * MapTileSize + (y % 8) * 4 + math.floor((x % 8) / 2)
+end
+
+function pixelCoordinates(pixelOffset)
+	local localOffset = pixelOffset - MapPixelDataAddress
+	local tileX = math.floor((localOffset % MapTileRowSize) / MapTileSize)
+	local pixelX = (tileX * 8) + (localOffset % 4) * 2
+	local tileY = math.floor(localOffset / MapTileRowSize)
+	local pixelY = tileY * 8 + math.floor((localOffset % MapTileSize) / 4)
+	return pixelX, pixelY
+end
+
+spec.custom["mapData"] = function(payload)
+	local mapId, pixelX, pixelY = payload[1], payload[2], payload[3]
+	if mapId ~= memory.readbyte(CurrentMapIdAddress) then return end
+	local i = 4
+	for y=pixelY, pixelY + 4 do
+		for x=pixelX, pixelX + 4, 2 do
+			local offset = pixelDataOffset(x, y)
+			memory.writebyte(offset, payload[i])
+			i = i + 1
+		end
+	end
+end
+
+function sendMapData(localOffset)
+	local pixelX, pixelY = pixelCoordinates(MapPixelDataAddress + localOffset)
+	local payload = {memory.readbyte(CurrentMapIdAddress), pixelX, pixelY}
+	local i = 4
+	for y=pixelY, pixelY + 4 do
+		for x=pixelX, pixelX + 4, 2 do
+			local offset = pixelDataOffset(x, y)
+			payload[i] = memory.readbyte(offset)
+			i = i + 1
+		end
+	end
+	send("mapData", payload)
+end
+
 -- Map exploration
-for i=0,0x19b do
-	spec.sync[0x020f6e34 + i] = {kind="bitOr", receiveTrigger=function(value, previousValue)
+-- Strategy here: compare graphics data changes on exploration change, then send
+for i=0,MapExplorationDataExtent do
+	spec.sync[MapExplorationDataAddress + i] = {kind="bitOr", writeTrigger=function(value, previousValue)
 		if value == previousValue then return end
-		local changedBits = XOR(value, previousValue)
-		local changedBitNumber = 0
-		local b = changedBits
-		while AND(b, 1) ~= 1 and changedBitNumber < 8 do
-			b = SHIFT(b, 1)
-			changedBitNumber = changedBitNumber + 1
-		end
-		if i % 2 == 1 then changedBitNumber = changedBitNumber + 8 end
-		-- changedBitNumber should be 0-15
-		-- TODO check if abyss
-		local mapColumn = math.floor(i / 92)
-		local mapRow = math.floor(i / 2) % 46
-		local leftBorderX = 16
-		local pixelX = leftBorderX + (mapColumn * 64) + changedBitNumber * 4
-		local topBorderY = 8
-		local pixelY = topBorderY + mapRow * 4
-		-- draw starting in pixelX, pixelY, +4 each direction
-		-- TODO look up actual map data
-		-- TODO don't draw open borders
-		for x=0,4 do
-			for y=0,4 do
-				local pixelIndex = getPixelByteIndex(pixelX + x, pixelY + y)
-				
-				local pixels = mainmemory.readbyte(pixelIndex)
-				if x % 2 == 1 then
-					pixels = OR(0x10, AND(0x0f, pixels))
-				else
-					pixels = OR(0x01, AND(0xf0, pixels))
+		local pixelDataBefore = memory.read_bytes_as_array(MapPixelDataAddress, MapPixelDataSize)
+		table.insert(spec.nextFrameTasks, function()
+			local pixelDataAfter = memory.read_bytes_as_array(MapPixelDataAddress, MapPixelDataSize)
+			for i=2,MapPixelDataSize do
+				if pixelDataBefore[i] ~= pixelDataAfter[i] then
+					sendMapData(i - 1) -- account for 1-based array
+					return
 				end
-				mainmemory.writebyte(pixelIndex, pixels)
 			end
-		end
+		end)
 	end}
 end
 
 -- Boss Fights (needs verification)
--- TODO verify alignment
+-- AC
 spec.sync[0x020f7038] = {size=4, kind="bitOr"}
 --spec.sync[0x020f7039] = {kind="bitOr"}
 --spec.sync[0x020f703a] = {kind="bitOr"}
@@ -130,12 +169,13 @@ spec.sync[0x020f7180] = {size=4, kind="bitOr"}
 spec.sync[0x020f7184] = {size=4, kind="bitOr"}
 -- TODO verify event alignment
 -- Item pickup alignment good (719d at size 1)
--- Events, item pickups (todo: don't know end range)
+-- Events, item pickups
+-- RC
 for i=0,0x1f do
 	spec.sync[0x020f7188 + i] = {kind="bitOr"}
 end
--- TODO verify alignment
 -- Warp Rooms visited
+-- AC
 spec.sync[0x020f71a8] = {size=2, kind="bitOr"}
 
 -- Item Inventory

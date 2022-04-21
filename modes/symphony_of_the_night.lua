@@ -57,7 +57,9 @@ end
 -- Rooms count
 -- Delta could be bad if both people explore the same room at the same time
 spec.sync[0x8003c760] = {size=4, kind="delta"}
+
 -- Map exploration
+-- Strategy here: calculate graphics offset from exploration change, then send graphics data
 -- TODO figure out inverted castle
 for i=0,0x32f do
 	spec.sync[0x8006bbc4 + i] = {kind="bitOr", 

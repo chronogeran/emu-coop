@@ -28,6 +28,7 @@ end
 local CurrentMapIdAddress = 0x02111785
 local MapExplorationDataAddress = 0x02111794
 local MapPixelDataAddress = 0x02136900
+local MapExplorationDataExtent = 0x1d8
 local MapPixelDataSize = 0x6000
 local MapTileRowSize = 0x400
 local MapTileSize = 0x20
@@ -77,7 +78,8 @@ function sendMapData(localOffset)
 end
 
 -- Map exploration
-for i=0,0x1d8 do
+-- Strategy here: compare graphics data changes on exploration change, then send
+for i=0,MapExplorationDataExtent do
 	spec.sync[MapExplorationDataAddress + i] = {kind="bitOr", writeTrigger=function(value, previousValue)
 		if value == previousValue then return end
 		local pixelDataBefore = memory.read_bytes_as_array(MapPixelDataAddress, MapPixelDataSize)
