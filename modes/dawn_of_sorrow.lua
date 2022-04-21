@@ -91,7 +91,6 @@ spec.sync[0x020f7108] = {size=4, kind="delta",
 			local currentEquips = memory.readbyte(0x020f741e)
 			memory.writebyte(0x0f741e, OR(currentEquips, bitsToSet))
 		end
-		
 	end
 }
 spec.sync[0x020f710c] = {size=4, kind="delta",

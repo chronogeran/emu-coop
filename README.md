@@ -1,5 +1,3 @@
-This is the source code repo for emu-coop. **[Probably you would rather be looking at the project webpage](https://mcclure.github.io/emu-coop/), which has more detail and a downloadable SNES emulator for Windows.**
-
 # emu-coop
 
 This directory contains some Lua scripts that, when loaded by a compliant emulator such as snes9x-rr or FCEUX, can synchronize emulator state over the internet (allowing "cooperative" playthroughs of single-player games).
@@ -19,6 +17,7 @@ Currently supported emulators/consoles:
 	* NES: NesHawk
 	* DS: melonDS
 	* PSX: Octoshock
+	* GBA: mgba
 * FCEUXWin32 (NES)
 * snes9x-rr (SNES)
 
@@ -38,6 +37,9 @@ Currently supported emulators/consoles:
 * Link to the Past Randomizer (SNES)
 * Super Metroid (SNES)
 * Castlevania: Symphony of the Night (PSX)
+* Castlevania: Circle of the Moon (GBA)
+* Castlevania: Harmony of Dissonance (GBA)
+* Castlevania: Aria of Sorrow (GBA)
 * Castlevania: Dawn of Sorrow (DS)
 * Castlevania: Portrait of Ruin (DS)
 * Castlevania: Order of Ecclesia (DS)
