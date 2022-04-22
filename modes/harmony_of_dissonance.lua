@@ -65,12 +65,12 @@ end
 -- AC
 spec.sync[0x0201883e] = {kind="bitOr"}
 -- Relics
--- AC
 spec.sync[0x0201883f] = {kind="bitOr", receiveTrigger=function(value, previousValue)
 	local changedBits = XOR(value, previousValue)
 	local currentEquips = memory.readword(0x02018841)
 	memory.writeword(0x02018841, OR(currentEquips, changedBits))
 end}
+-- AC
 spec.sync[0x02018840] = {kind="bitOr", receiveTrigger=function(value, previousValue)
 	local changedBits = XOR(value, previousValue)
 	local currentEquips = memory.readword(0x02018842)
