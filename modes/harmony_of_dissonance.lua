@@ -17,15 +17,16 @@ local spec = {
 }
 
 -- Map
--- AC
 for i=0,0x278,4 do
 	spec.sync[0x02000090 + i] = {kind="bitOr", size=4}
 end
 
+-- Visit flags
+spec.sync[0x0200030e] = {kind="bitOr", size=2}
 -- Flags
--- AC
-for i=0,0xa8,4 do
-	spec.sync[0x0200030c + i] = {kind="bitOr", size=4}
+-- RC
+for i=0,0x70,4 do
+	spec.sync[0x02000310 + i] = {kind="bitOr", size=4}
 end
 
 -- HP
@@ -49,10 +50,9 @@ spec.sync[0x02018798] = {kind="delta", size=4}
 spec.sync[0x0201879c] = {kind="delta", size=4}
 
 -- Inventory
--- AC
 -- Items
 for i=0,0x1b do
-	spec.sync[0x0201879c + i] = {kind="delta"}
+	spec.sync[0x020187a0 + i] = {kind="delta"}
 end
 -- Whips
 spec.sync[0x020187bc] = {kind="bitOr"}
@@ -78,7 +78,6 @@ spec.sync[0x02018840] = {kind="bitOr", receiveTrigger=function(value, previousVa
 end}
 
 -- Enemy Info
--- AC
 for i=0,0xc,4 do
 	spec.sync[0x02018854 + i] = {kind="bitOr", size=4}
 end

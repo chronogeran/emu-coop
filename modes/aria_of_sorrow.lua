@@ -56,6 +56,7 @@ spec.sync[0x02013392] = {kind="delta", size=4, receiveTrigger=function(value, pr
 		local currentEquips = memory.readbyte(equippedAbilitiesAddr)
 		memory.writebyte(equippedAbilitiesAddr, OR(currentEquips, bitsToSet))
 	end
+end
 }
 --for i=0,2 do
 	--spec.sync[0x02013392 + i] = {kind="delta", receiveTrigger=function(value, previousValue)

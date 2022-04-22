@@ -10,7 +10,7 @@ local spec = {
 	guid = "61d0d1e0-5331-40dd-b2e0-ad8aa912ea53",
 	format = "1.2",
 	name = "Goonies II",
-	match = f{"stringtest", addr=0xffe9, value="GOONIES"},
+	match = {"stringtest", addr=0xffe9, value="GOONIES"},
 	--running = {"test", addr = 0x6c, lte = 0xfe}, TODO
 	sync = {},
 	custom = {},
