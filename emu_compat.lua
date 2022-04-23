@@ -43,9 +43,11 @@ if nds and snes and nes then
 	
 	local memoryDomainsTable = {}
 	local console = nil
+	registerSize = 1
 	-- some duck typing on memory prefixes
 	if tableHasValue(memoryDomains, "EWRAM") and tableHasValue(memoryDomains, "IWRAM") then
 		console = "gba"
+		registerSize = 4
 		memoryDomainsTable[2] = "EWRAM"
 		memoryDomainsTable[3] = "IWRAM"
 		memoryDomainsTable[6] = "VRAM"
@@ -53,12 +55,15 @@ if nds and snes and nes then
 		memoryDomainsTable[0xe] = "SRAM"
 	elseif tableHasValue(memoryDomains, "Main RAM") and tableHasValue(memoryDomains, "ARM9 BIOS") then
 		console = "ds"
+		registerSize = 4
 		memoryDomainsTable[2] = "Main RAM"
 	elseif tableHasValue(memoryDomains, "MainRAM") and tableHasValue(memoryDomains, "GPURAM") then
 		console = "psx"
+		registerSize = 4
 		memoryDomainsTable[0x80] = "MainRAM"
 	elseif tableHasValue(memoryDomains, "RAM") and tableHasValue(memoryDomains, "PPU Bus") then
 		console = "nes"
+		registerSize = 1
 		-- system bus is writable
 	end
 
@@ -101,7 +106,24 @@ if nds and snes and nes then
 	gui.register = event.onframeend
 	emu.registerexit = event.onexit
 	memory.registerwrite = function(addr, size, callback)
-		event.onmemorywrite(callback, addr)
+		-- BizHawk memory callback arguments are addr, value, flags
+		-- mgba doesn't return flags though.
+		-- emu-coop traditionally ignores callback args. Could change that.
+		-- This implementation should work for all bizhawk cores, as long as I get callbackAddr back
+		-- It does require you get your alignment right, but that's just a necessity with 32 bit consoles
+		-- unless we were to register at 1,2 and 4 byte alignments
+		-- but then we risk overwriting/overlapping other syncs
+		event.onmemorywrite(function(callbackAddr, value, flags)
+			--print(string.format("callback %x %x %x %x", addr, callbackAddr, value, flags))
+			-- Try assuming we can look up the size.
+			-- In mgba we can't count on any captured variables since there's only one callback
+			local record = mainDriver.spec.sync[callbackAddr]
+			if record then
+				mainDriver:caughtWrite(callbackAddr, 0, record, record.size or 1)
+			else
+				print(string.format("No record for address %x", callbackAddr))
+			end
+		end, addr)
 		--for i=1,size do
 			--print("registering write at " .. (addr + i - 1))
 			--event.onmemorywrite(callback, addr + i - 1)
