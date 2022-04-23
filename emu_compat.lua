@@ -107,27 +107,27 @@ if nds and snes and nes then
 	emu.registerexit = event.onexit
 	memory.registerwrite = function(addr, size, callback)
 		-- BizHawk memory callback arguments are addr, value, flags
-		-- mgba doesn't return flags though.
-		-- emu-coop traditionally ignores callback args. Could change that.
-		-- This implementation should work for all bizhawk cores, as long as I get callbackAddr back
-		-- It does require you get your alignment right, but that's just a necessity with 32 bit consoles
-		-- unless we were to register at 1,2 and 4 byte alignments
-		-- but then we risk overwriting/overlapping other syncs
-		event.onmemorywrite(function(callbackAddr, value, flags)
-			--print(string.format("callback %x %x %x %x", addr, callbackAddr, value, flags))
-			-- Try assuming we can look up the size.
-			-- In mgba we can't count on any captured variables since there's only one callback
-			local record = mainDriver.spec.sync[callbackAddr]
-			if record then
-				mainDriver:caughtWrite(callbackAddr, 0, record, record.size or 1)
-			else
-				print(string.format("No record for address %x", callbackAddr))
+		-- not all cores return all args though.
+		-- In mgba we can't count on any captured variables since there's only one callback
+		-- so we'll rely on just the address returned
+		local function theMemoryCallback(callbackAddr, value, flags)
+			print(string.format("callback %x %x %x %x", addr, callbackAddr, value, flags))
+			-- Check all addresses this callback may be associated with
+			for i=0,registerSize-1 do
+				local unalignedAddress = callbackAddr + i
+				local record = mainDriver.spec.sync[unalignedAddress]
+				if record then
+					mainDriver:caughtWrite(unalignedAddress, 0, record, record.size or 1)
+				end
 			end
-		end, addr)
-		--for i=1,size do
-			--print("registering write at " .. (addr + i - 1))
-			--event.onmemorywrite(callback, addr + i - 1)
-		--end
+		end
+		-- TODO move this logic/make it compatible with all emulators
+		-- Assuming the writes may be aligned with any offset, we'll have to register for both aligned and unaligned
+		event.onmemorywrite(theMemoryCallback, addr)
+		local alignedAddr = addr - (addr % registerSize)
+		if alignedAddr ~= addr then event.onmemorywrite(theMemoryCallback, alignedAddr) end -- 4/2 byte if applicable
+		local alignedAddr2 = addr - (addr % (registerSize / 2))
+		if alignedAddr2 ~= alignedAddr and alignedAddr2 ~= addr then event.onmemorywrite(theMemoryCallback, alignedAddr2) end -- 2 byte on 4 byte machine if applicable
 	end
 
 	-- Emu
@@ -136,10 +136,16 @@ end
 
 -- FCEUX
 if FCEU then
+	registerSize = 1
 	memory.writeword = function(addr, value)
 		memory.writebyte(addr, AND(value, 0xff))
 		memory.writebyte(addr + 1, AND(SHIFT(value, 8), 0xff))
 	end
+end
+
+-- Snes9x
+if not FCEU and not BizHawk then
+	registerSize = 2
 end
 
 if not BNOT then
