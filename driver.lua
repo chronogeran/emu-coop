@@ -174,9 +174,51 @@ end
 function GameDriver:childWake()
 	self:sendTable {"hello", version=version.release, guid=self.spec.guid}
 
+	if driverDebug then print("Registering callbacks") end
 	-- Register memory callbacks
+	self.registeredAddresses = {}
+	-- BizHawk memory callback arguments are addr, value, flags
+	-- not all cores return all args though.
+	-- FCEUX callback argumenst are addr, size, value
+	-- Does snes9x provide the address in the callback?
+	-- In mgba we can't count on any captured variables since there's only one callback
+	-- so we'll rely on just the address returned.
+	--[[ Cores generally/only call callbacks on the base address of the write operation, meaning
+		if it's a 4-byte write, the callback is called for the first of the 4. 
+		In order to make the life of the modder easier, so they don't have to worry about and test
+		the alignment of writes to each address, as well as to handle situations in which the game
+		might use different alignments for the same address, we use this strategy where we call
+		caughtWrite for all addresses that may be associated with the triggered address.
+		This means caughtWrite must tolerate extra calls and ignore if nothing has changed.
+	--]]
+	local function theMemoryCallback(callbackAddr, value, flags)
+		print(string.format("callback %x %x %x", callbackAddr, value, flags))
+		-- Check all addresses this callback may be associated with
+		for i=0,registerSize-1 do
+			local unalignedAddress = callbackAddr + i
+			local record = mainDriver.spec.sync[unalignedAddress]
+			if record then
+				mainDriver:caughtWrite(unalignedAddress, 0, record, record.size or 1)
+			end
+		end
+	end
+
+	-- All provided addresses
 	for k,v in pairs(self.spec.sync) do
-		memory.registerwrite(k, 0, nil)
+		-- Assuming the writes may be aligned with any offset, we'll have to register for both aligned and unaligned
+		-- This loops through 4,2, and 1-byte aligned, depending on the register size of the current console
+		local s = registerSize
+		local size = v.size or 1
+		while s >= 1 do
+			local alignedAddress = k - (k % s)
+			-- only register one callback per address
+			if not self.registeredAddresses[alignedAddress] then
+				-- size arg is used in FCEUX & snes9x
+				memory.registerwrite(alignedAddress, size, theMemoryCallback)
+				self.registeredAddresses[alignedAddress] = true
+			end
+			s = math.floor(s / 2)
+		end
 	end
 end
 

@@ -106,28 +106,7 @@ if nds and snes and nes then
 	gui.register = event.onframeend
 	emu.registerexit = event.onexit
 	memory.registerwrite = function(addr, size, callback)
-		-- BizHawk memory callback arguments are addr, value, flags
-		-- not all cores return all args though.
-		-- In mgba we can't count on any captured variables since there's only one callback
-		-- so we'll rely on just the address returned
-		local function theMemoryCallback(callbackAddr, value, flags)
-			print(string.format("callback %x %x %x %x", addr, callbackAddr, value, flags))
-			-- Check all addresses this callback may be associated with
-			for i=0,registerSize-1 do
-				local unalignedAddress = callbackAddr + i
-				local record = mainDriver.spec.sync[unalignedAddress]
-				if record then
-					mainDriver:caughtWrite(unalignedAddress, 0, record, record.size or 1)
-				end
-			end
-		end
-		-- TODO move this logic/make it compatible with all emulators
-		-- Assuming the writes may be aligned with any offset, we'll have to register for both aligned and unaligned
-		event.onmemorywrite(theMemoryCallback, addr)
-		local alignedAddr = addr - (addr % registerSize)
-		if alignedAddr ~= addr then event.onmemorywrite(theMemoryCallback, alignedAddr) end -- 4/2 byte if applicable
-		local alignedAddr2 = addr - (addr % (registerSize / 2))
-		if alignedAddr2 ~= alignedAddr and alignedAddr2 ~= addr then event.onmemorywrite(theMemoryCallback, alignedAddr2) end -- 2 byte on 4 byte machine if applicable
+		event.onmemorywrite(callback, addr)
 	end
 
 	-- Emu
