@@ -15,6 +15,7 @@ Please note that not every core in BizHawk is supported. Use the indicated core 
 Currently supported emulators/consoles:
 * BizHawk
 	* NES: NesHawk
+	* SNES: BSNES
 	* DS: melonDS
 	* PSX: Octoshock
 	* GBA: mgba

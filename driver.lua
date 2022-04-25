@@ -179,8 +179,8 @@ function GameDriver:childWake()
 	self.registeredAddresses = {}
 	-- BizHawk memory callback arguments are addr, value, flags
 	-- not all cores return all args though.
-	-- FCEUX callback argumenst are addr, size, value
-	-- Does snes9x provide the address in the callback?
+	-- FCEUX callback arguments are addr, size, value
+	-- snes9x callback arguments are addr, and probably flags
 	-- In mgba we can't count on any captured variables since there's only one callback
 	-- so we'll rely on just the address returned.
 	--[[ Cores generally/only call callbacks on the base address of the write operation, meaning
