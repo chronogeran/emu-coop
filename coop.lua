@@ -89,7 +89,9 @@ if emu.emulating() then
 			end
 		else
 			-- Tcp
-			local data = tcpDialog()
+			-- Get server defaults
+			local defaults = readsettings("serversettings.txt")
+			local data = tcpDialog(defaults)
 
 			if data then -- If user did not hit cancel
 				trim(data)
@@ -99,6 +101,9 @@ if emu.emulating() then
 					if not nonempty(data.server) then scrub("Server") end
 				end
 				if not nonzero(data.port) then scrub("Port") end
+
+				-- Save input for next run
+				writesettings("serversettings.txt", data)
 
 				function connect()
 					mainDriver = GameDriver(spec, data.forceSend)

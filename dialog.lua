@@ -1,8 +1,40 @@
 
+function readsettings(filename)
+	local function readline(f, data, key)
+		local line = f:read()
+		if line then
+			for token in string.gmatch(line, key .. "=([^%s]+)") do
+				data[key] = token
+				break
+			end
+		end
+	end
+
+	local defaults = {["isServer"]=false, ["server"]="127.0.0.1", ["port"]="5968"}
+	local f = io.open(filename)
+	readline(f, defaults, "isServer")
+	readline(f, defaults, "server")
+	readline(f, defaults, "port")
+	defaults.isServer = defaults.isServer == "true"
+	f:close()
+	return defaults
+end
+
+function writesettings(filename, data)
+	local f = io.open(filename, "w")
+	local line = "isServer="
+	if data.startAsServer then line = line .. "true"
+	else line = line .. "false" end
+	f:write(line .. "\n")
+	f:write("server=" .. data.server .. "\n")
+	f:write("port=" .. data.port .. "\n")
+	f:close()
+end
+
 -- BizHawk
 if BizHawk then
 	-- Dialog
-	tcpDialog = function()
+	tcpDialog = function(defaults)
 		local done = false
 		local result = nil
 
@@ -11,8 +43,9 @@ if BizHawk then
 		end
 		local f = forms.newform(500, 200, "Connection Settings", onclose)
 		local h_isServer = forms.checkbox(f, "Start Server", 5, 5)
-		local h_serverName = forms.textbox(f, "127.0.0.1", 100, 25, nil, 5, 35)
-		local h_port = forms.textbox(f, "5968", 50, 25, nil, 5, 65)
+		if defaults.isServer then forms.setproperty(h_isServer, "Checked", true) end
+		local h_serverName = forms.textbox(f, defaults.server, 100, 25, nil, 5, 35)
+		local h_port = forms.textbox(f, defaults.port, 50, 25, nil, 5, 65)
 		function onOk()
 			result = {}
 			result.startAsServer = forms.ischecked(h_isServer)
@@ -91,11 +124,13 @@ else
 		return {server=server, port=port, nick=nick, partner=partner, forceSend=forceSend==1}
 	end
 
-	function tcpDialog()
+	function tcpDialog(defaults)
+		local startServer = 0
+		if defaults.isServer then startServer = 1 end
 		local res, startAsServer, server, port = iup.GetParam("Connection Settings", nil,
 			"Start Server: %" .. optionLetter .. "|No|Yes|\n" ..
 			"Connect Server: %s\n" ..
-			"Connect Port: %i\n", 0, "127.0.0.1", 5968) -- TODO defaults saved from last time
+			"Connect Port: %i\n", startServer, defaults.server, defaults.port)
 		if res == 0 then return nil end
 		return {startAsServer=startAsServer == 1, server=server, port=port}
 	end
