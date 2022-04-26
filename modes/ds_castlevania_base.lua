@@ -2,13 +2,6 @@
 -- Common functionality for DS castlevania games to update the map graphics as they are revealed by other players
 
 function addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, spec)
-spec.nextFrameTasks = {}
-spec.tick = function()
-	for k,v in pairs(spec.nextFrameTasks) do
-		v()
-	end
-	spec.nextFrameTasks = {}
-end
 
 local MapPixelDataSize = 0x6000
 local MapTileRowSize = 0x400
@@ -72,7 +65,7 @@ for i=0,MapExplorationDataExtent,2 do
 	spec.sync[MapExplorationDataAddress + i] = {kind="bitOr", size=2, writeTrigger=function(value, previousValue)
 		if value == previousValue then return end
 		local pixelDataBefore = memory.read_bytes_as_array(MapPixelDataAddress, MapPixelDataSize)
-		table.insert(spec.nextFrameTasks, function()
+		mainDriver:executeNextFrame(function()
 			local pixelDataAfter = memory.read_bytes_as_array(MapPixelDataAddress, MapPixelDataSize)
 			for i=2,MapPixelDataSize do
 				if pixelDataBefore[i] ~= pixelDataAfter[i] then

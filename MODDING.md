@@ -271,6 +271,10 @@ The following functions are available to code written in a mode file.
 
     Bit operation functions.
 
+* `mainDriver:executeNextFrame(fun)`
+
+    Enqueues a function to be executed on the next frame update. Useful when you receive a trigger but want to wait for some other changes to take place.
+
 In addition, you can probably expect the [snes9x-rr](https://github.com/TASVideos/snes9x-rr/wiki) functions are available. Unless you're running in FCEUX, maybe? Life is an adventure.
 
 # Are you stuck?

@@ -23,14 +23,6 @@ local spec = {
 	custom = {},
 }
 
-spec.nextFrameTasks = {}
-spec.tick = function()
-	for k,v in pairs(spec.nextFrameTasks) do
-		v()
-	end
-	spec.nextFrameTasks = {}
-end
-
 -- Events
 -- TODO alignment, range
 for i=0,0xff,4 do
@@ -82,7 +74,7 @@ for i=0,0x32f do
 		local mapY = math.floor(i / 0x10)
 		local pixelX = mapX * 4
 		local pixelY = mapY * 4 + 1
-		table.insert(spec.nextFrameTasks, function()
+		mainDriver:executeNextFrame(function()
 			local payload = {pixelX, pixelY}
 			local i = 3
 			for y=pixelY, pixelY + 4 do

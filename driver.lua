@@ -143,6 +143,7 @@ class.GameDriver(Driver)
 function GameDriver:_init(spec, forceSend)
 	self.spec = spec
 	self.sleepQueue = {}
+	self.nextFrameTasks = {}
 	self.forceSend = forceSend
 	self.didCache = false
 end
@@ -174,7 +175,15 @@ function GameDriver:checkFirstRunning() -- Do first-frame bootup-- only call if 
 	end
 end
 
+function GameDriver:executeNextFrame(f)
+	table.insert(self.nextFrameTasks, f)
+end
+
 function GameDriver:childTick()
+	-- Execute queued tasks
+	for k,v in pairs(self.nextFrameTasks) do v() end
+	self.nextFrameTasks = {}
+
 	if self:isRunning() then
 		self:checkFirstRunning()
 
