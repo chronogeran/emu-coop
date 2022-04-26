@@ -43,6 +43,9 @@ function recordChanged(record, value, previousValue, receiving)
 	local unalteredValue = value -- "value" might change below; here's its initial value
 	local allow = true
 
+	-- Unwrap the value
+	if receiving and record.kind == "flags" then value = value[1] end
+
 	-- Value 
 	local maskedValue = value
 	local mask = 0xff
@@ -70,6 +73,23 @@ function recordChanged(record, value, previousValue, receiving)
 		allow = maskedValue ~= previousValue               -- Did operated-on bits change?
 		if receiving then
 			value = OR(maskedValue, previousValue)
+		end
+	elseif record.kind == "flags" then
+		if receiving then
+			-- value is value from the message, previousValue is current value locally
+			local changedBits = unalteredValue[2]
+			-- Set any bits that should be set
+			value = OR(previousValue, AND(changedBits, maskedValue))
+			-- Clear any bits that should be cleared
+			value = AND(value, BNOT(AND(changedBits, BNOT(maskedValue))))
+			-- Only accept if changed
+			allow = value ~= previousValue
+		else
+			-- Sending out. maskedValue is current value locally, previousValue is value from the memory cache
+			allow = maskedValue ~= previousValue -- Did operated-on bits change?
+			local changedBits = XOR(maskedValue, previousValue)
+			-- stuff both into a single value for the message
+			value = { maskedValue, changedBits }
 		end
 	elseif record.kind == "delta" then
 		if not receiving then

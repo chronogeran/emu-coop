@@ -119,6 +119,7 @@ The sync table is a mapping of memory addresses to sync rules. Each sync rule is
 
         * "high": This means "always take the higher value". If the current value is 4, and you write 3, a sync request will not be sent. If your partner sends a message to write the value to 3, and the current value is 4, it will be ignored.
         * "bitOr": This means that the value is a bit field, and you should always take the binary OR of values. If the current value is 3, and your partner says to set the value to 9, the new value will be 11.
+        * "flags": Similar to bitOr, the value is made up of bits, but this type allows for both setting and clearing of each bit.
         * "delta": I described this earlier in the document, but, this should be used for "quantities". If you raise from 500 to 600, emu-coop will send "+100" to your partner, and your partner will add 100 to their current memory value, whatever that is. If you drop from 600 to 500, it will send "-100", and your partner's value will drop by 100. If you use this you should probably set the "deltaMin" and "deltaMax" keys also (see below).
         * "trigger": This means that no message is sent when the value is written, and if a value is received from the other side, it will not be written to memory. The only reason to use this is if you're using `receiveTrigger`/`writeTrigger` (see below), which will still be called when appropriate.
 

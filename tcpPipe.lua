@@ -240,17 +240,20 @@ Message Format
 	5: 2 byte address, negative value
 	6: 3 byte address, negative value
 	7: 4 byte address, negative value
-	9: custom message
+	8: 2 byte address, flags value
+	9: 3 byte address, flags value
+	10: 4 byte address, flags value
+	20: custom message
 * Body varies by opcode
 
 Message Bodies by Opcode
 Hello (1)
 	* pretty.write of table
-Default Table (2-8)
+Default Table (2-10)
 	* 2 or 3 bytes address
 	* 1 byte value size
 	* x bytes value
-Custom Message (9)
+Custom Message (20)
 	* 1 byte name length
 	* x bytes name
 	* 1 byte table type (00: byte stream, 01: generic object)
@@ -280,13 +283,29 @@ function isByteArray(t)
 	return true
 end
 
+function appendNumberToBuffer(s, n, size)
+	for i = 1,size do
+		s = s .. string.char(AND(n, 0xff))
+		n = SHIFT(n, 8)
+	end
+	return s
+end
+
+function readNumberFromBuffer(s, offset, size)
+	local value = 0
+	for i = 1,size do
+		value = value + SHIFT(s:byte(offset + i), -8 * (i - 1))
+	end
+	return value
+end
+
 function serializeTable(t)
 	local s = ""
 	if t[1] then
 		if t[1] == "hello" then -- Handshake
 			s = string.char(1) .. pretty.write(t)
 		else
-			s = string.char(9)
+			s = string.char(20)
 			-- Name
 			s = s .. string.char(#t[2])
 			s = s .. t[2]
@@ -312,7 +331,8 @@ function serializeTable(t)
 		if t.addr >= 0x1000000 then addressSize = 4
 		elseif t.addr >= 0x10000 then addressSize = 3 end
 		local opcode = addressSize
-		if t.value < 0 then opcode = opcode + 3 end
+		if type(t.value) == "table" then opcode = opcode + 6
+		elseif t.value < 0 then opcode = opcode + 3 end
 		s = string.char(opcode)
 
 		-- Address
@@ -322,15 +342,21 @@ function serializeTable(t)
 			addr = SHIFT(addr, 8)
 		end
 
-		-- Value Size
-		local valueSize = bytesNeededForValue(t.value)
-		s = s .. string.char(valueSize)
+		if opcode >= 8 and opcode <= 10 then
+			-- Value Size
+			local valueSize = bytesNeededForValue(t.value[1])
+			s = s .. string.char(valueSize)
 
-		-- x bytes value
-		local val = t.value
-		for i = 1,valueSize do
-			s = s .. string.char(AND(val, 0xff))
-			val = SHIFT(val, 8)
+			-- x bytes value
+			s = appendNumberToBuffer(s, t.value[1], valueSize)
+			s = appendNumberToBuffer(s, t.value[2], valueSize)
+		else
+			-- Value Size
+			local valueSize = bytesNeededForValue(t.value)
+			s = s .. string.char(valueSize)
+
+			-- x bytes value
+			s = appendNumberToBuffer(s, t.value, valueSize)
 		end
 	end
 	return s
@@ -341,12 +367,13 @@ function deserializeTable(s)
 	if opcode == 1 then
 		-- hello
 		return pretty.read(s:sub(2))
-	elseif opcode >= 2 and opcode <= 7 then
+	elseif opcode >= 2 and opcode <= 19 then
 		-- Default table
-		
+
 		-- address
 		local addressSize = opcode
-		if opcode > 4 then addressSize = opcode - 3 end
+		if opcode >= 5 and opcode <= 7 then addressSize = opcode - 3
+		elseif opcode >= 8 and opcode <= 10 then addressSize = opcode - 6 end
 		local addr = 0
 		for i = 1,addressSize do
 			addr = addr + SHIFT(s:byte(i + 1), -8 * (i - 1))
@@ -356,18 +383,18 @@ function deserializeTable(s)
 		local valueSize = s:byte(2 + addressSize)
 
 		-- value
-		local value = 0
-		for i = 1,valueSize do
-			value = value + SHIFT(s:byte(2 + addressSize + i), -8 * (i - 1))
-		end
-		if opcode > 4 then
+		local value = readNumberFromBuffer(s, 2 + addressSize, valueSize)
+		if opcode >= 5 and opcode <= 7 then
 			-- negative
 			value = value - SHIFT(1, -valueSize * 8)
+		elseif opcode >= 8 and opcode <= 10 then
+			-- flags
+			value = { value, readNumberFromBuffer(s, 2 + addressSize + valueSize, valueSize) }
 		end
 
 		return {addr=addr, value=value}
 
-	elseif opcode == 9 then
+	elseif opcode == 20 then
 		local result = {"custom"}
 		-- Name
 		local nameLength = s:byte(2)

@@ -227,30 +227,7 @@ end
 -- Events & chests
 -- Some events involve clearing flags, so bitOr isn't sufficient.
 for i = 0x6480, 0x64a1 do
-	spec.sync[i] = {kind=function(value, previousValue, receiving)
-		local allow = true
-		-- Size is assumed to be 1
-		if receiving then
-			-- value is value from the message, previousValue is current value locally
-			local receivedMask = SHIFT(AND(value, 0xff00), 8)
-			local receivedValue = AND(value, 0xff)
-			-- Set any bits that should be set
-			value = OR(previousValue, AND(receivedMask, receivedValue))
-			-- Clear any bits that should be cleard
-			value = AND(value, BNOT(AND(receivedMask, BNOT(receivedValue))))
-			-- Only accept if changed
-			allow = value ~= previousValue
-		else
-			-- Only send if changed
-			allow = value ~= previousValue
-			-- Sending out. value is current value locally, previousValue is value from the memory cache
-			-- mask is what changed
-			local sendingMask = XOR(value, previousValue)
-			-- stuff both into a single value for the message
-			value = AND(value, 0xff) + SHIFT(sendingMask, -8)
-		end
-		return allow, value
-	end} -- nameBitmap={}
+	spec.sync[i] = {kind="flags"} -- nameBitmap={}
 end
 
 -- Change form is 6485 low 4 bits, don't sync that
