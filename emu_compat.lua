@@ -102,6 +102,15 @@ if nds and snes and nes then
 	memory.readword = memory.read_u16_le
 	memory.readdword = memory.read_u32_le
 
+	memory.getbussize = function()
+		if console == "nes"  then return 0x10000 end
+		if console == "snes" then return 0x1000000 end
+		if console == "gba"  then return 0x0e010000 end
+		if console == "ds"   then return 0x100000000 end
+		if console == "psx"  then return 0x100000000 end
+		return 0x100000000
+	end
+
 	-- Events
 	gui.register = event.onframeend
 	emu.registerexit = event.onexit
@@ -120,11 +129,13 @@ if FCEU then
 		memory.writebyte(addr, AND(value, 0xff))
 		memory.writebyte(addr + 1, AND(SHIFT(value, 8), 0xff))
 	end
+	memory.getbussize = function() return 0x10000 end
 end
 
 -- Snes9x
 if not FCEU and not BizHawk then
 	registerSize = 2
+	memory.getbussize = function() return 0x1000000 end
 end
 
 if not BNOT then

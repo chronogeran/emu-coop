@@ -15,7 +15,7 @@ function Pipe:wake(sock)
 
 	emu.registerexit(function()
 		self:exit()
-	end)
+	end, "exit")
 
 	self:childWake()
 
