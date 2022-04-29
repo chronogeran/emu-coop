@@ -15,9 +15,9 @@ require "dialog"
 require "pipe"
 require "driver"
 
---pipeDebug = true
 -- PROGRAM
 
+function runcoop()
 if emu.emulating() then
 	local spec = nil -- Mode specification
 	
@@ -129,4 +129,11 @@ if emu.emulating() then
 	end
 else
 	refuseDialog()
+end
+end
+
+-- Run only if called directly
+-- BizHawk doesn't like emu.frameadvance() being called from requires
+if not pcall(debug.getlocal, 4, 1) then
+	runcoop()
 end

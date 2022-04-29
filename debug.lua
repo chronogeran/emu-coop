@@ -5,3 +5,4 @@ driverDebug = true
 
 require "coop"
 
+runcoop()
