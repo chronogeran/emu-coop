@@ -17,7 +17,7 @@ local spec = {
 	custom = {},
 }
 
-local CurrentMapIdAddress = 0x02111785 -- TODO unknown
+local CurrentMapIdAddress = 0x020f6e25
 local MapExplorationDataAddress = 0x02111794
 local MapPixelDataAddress = 0x02136900
 local MapExplorationDataExtent = 0x1d8

@@ -221,6 +221,9 @@ function GameDriver:childWake()
 		might use different alignments for the same address, we use this strategy where we call
 		caughtWrite for all addresses that may be associated with the triggered address.
 		This means caughtWrite must tolerate extra calls and ignore if nothing has changed.
+		This strategy allows you to use smaller alignments than the game, but not bigger.
+		For example, if you register size 4 at b8, and the game writes size 1 at bb, we will not
+		trigger the b8 callback, only bb-be.
 	--]]
 	local function theMemoryCallback(callbackAddr, value, flags)
 		print(string.format("callback %x %x %x", callbackAddr, value, flags))
