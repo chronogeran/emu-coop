@@ -24,14 +24,35 @@ local MapExplorationDataExtent = 0x1d8
 require("modes.ds_castlevania_base")
 addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, spec)
 
--- Boss Fights (needs verification)
--- TODO verify alignment
+-- Boss Fights
 spec.sync[0x021119dc] = {size=4, kind="bitOr"}
 
 -- Subweapons/Spells/Dual Crush/Relics inventory
--- TODO equip relics when receiving them
-for i=0,0x34,4 do
+for i=0,0x2b,4 do
 	spec.sync[0x02111a6c + i] = {size=4, kind="delta"}
+end
+spec.sync[0x02111a98] = {size=2, kind="delta"}
+for i=0,0x7 do
+	spec.sync[0x02111a9a + i] = {size=1, kind="delta",
+		receiveTrigger=function (value, previousValue)
+			-- TODO test
+			local gotHigh = value >= 0x10
+			local gotLow = AND(value, 0xf) >= 1
+			local equipHigh = gotHigh and AND(previousValue, 0xf0) == 0
+			local equipLow = gotLow and AND(previousValue, 0x0f) == 0
+			if not (equipHigh or equipLow) then return end
+
+			local equipsAddress = 0x02111a68 + math.floor(i / 4)
+			local bitNumber = (i % 4) * 2
+			local currentEquips = memory.readbyte(equipsAddress)
+			if equipHigh then
+				currentEquips = OR(currentEquips, BIT(bitNumber + 1)))
+			end
+			if equipLow then
+				currentEquips = OR(currentEquips, BIT(bitNumber)))
+			end
+			memory.writebyte(equipsAddress, currentEquips)
+		end}
 end
 
 -- Bestiary: enemies defeated
@@ -48,32 +69,30 @@ for i=0,0x13 do
 end
 
 -- Events/Doors/Pickups/etc.
--- TODO verify alignment, range
-for i=0,0x54,4 do
+-- TODO verify range
+for i=0,0x58,4 do
 	spec.sync[0x02111b9c + i] = {size=4, kind="bitOr"}
 end
 
 -- Item Inventory
--- TODO verify alignment
 for i=0,0xb4,4 do
 	spec.sync[0x02111bf8 + i] = {size=4, kind="delta"}
 end
 
 -- Skill Mastery
--- TODO verify alignment, range
+-- TODO verify range
 for i=0,0x9c,4 do
 	-- TODO high 4 bits is something else, may need to mask
 	spec.sync[0x02111cba + i] = {size=4, kind="delta"}
 end
 
 -- Kill Counts
--- TODO verify alignment, range
 for i=0,0x134,4 do
 	spec.sync[0x02111d76 + i] = {size=4, kind="delta"}
 end
 
 -- Quests
--- TODO verify alignment, range
+-- TODO verify range
 for i=0,0x40,4 do
 	spec.sync[0x02111eac + i] = {size=4, kind="bitOr"}
 end
@@ -82,10 +101,8 @@ end
 --spec.sync[0x02---] = {size=2, kind="delta"}
 
 -- EXP
--- TODO verify max
 spec.sync[0x021121c0] = {size=4, kind="delta", deltaMin=0, deltaMax=99999999}
 -- Gold
--- TODO verify max
-spec.sync[0x021121c4] = {size=4, kind="delta", deltaMin=0, deltaMax=99999999}
+spec.sync[0x021121c4] = {size=4, kind="delta", deltaMin=0, deltaMax=9999999}
 
 return spec
