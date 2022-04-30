@@ -17,7 +17,6 @@ local spec = {
 }
 
 -- TODO auto equip magnes
--- TODO max ups (capped at 30 for all 3 types)
 
 -- HP
 --spec.sync[0x021002b4] = {size=2, kind="delta"}
@@ -94,5 +93,25 @@ end
 
 -- Kills
 spec.sync[0x021005e8] = {size=4, kind="delta", deltaMin=0, deltaMax=99999}
+
+-- Max ups
+spec.sync[0x0210079c] = {size=2, kind="delta", deltaMax=600, receiveTrigger=function(value, previousValue)
+	-- Update current and max when receiving
+	-- TODO test
+	memory.writeword(0x021002b4, memory.readword(0x021002b4) + value)
+	memory.writeword(0x021002b6, memory.readword(0x021002b6) + value)
+end}
+spec.sync[0x0210079e] = {size=2, kind="delta", deltaMax=300, receiveTrigger=function(value, previousValue)
+	-- Update current and max when receiving
+	-- TODO test
+	memory.writeword(0x021002b8, memory.readword(0x021002b8) + value)
+	memory.writeword(0x021002ba, memory.readword(0x021002ba) + value)
+end}
+spec.sync[0x021007a0] = {size=2, kind="delta", deltaMax=300, receiveTrigger=function(value, previousValue)
+	-- Update current and max when receiving
+	-- TODO test
+	memory.writeword(0x021002bc, memory.readword(0x021002bc) + value)
+	memory.writeword(0x021002be, memory.readword(0x021002be) + value)
+end}
 
 return spec
