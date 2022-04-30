@@ -18,17 +18,14 @@ local spec = {
 }
 
 local CurrentMapIdAddress = 0x020f6e25
-local MapExplorationDataAddress = 0x02111794
-local MapPixelDataAddress = 0x02136900
-local MapExplorationDataExtent = 0x1d8
+local MapExplorationDataAddress = 0x020f6e34
+local MapPixelDataAddress = 0x0210f040
+local MapExplorationDataExtent = 0x19b
 require("modes.ds_castlevania_base")
 addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, spec)
 
--- Boss Fights (needs verification)
--- AC
+-- Boss Fights
 spec.sync[0x020f7038] = {size=4, kind="bitOr"}
---spec.sync[0x020f7039] = {kind="bitOr"}
---spec.sync[0x020f703a] = {kind="bitOr"}
 
 -- Souls inventory
 for i=0,0x34,4 do
@@ -84,20 +81,18 @@ for i=0,0xe do
 	spec.sync[0x020f7170 + i] = {kind="bitOr"}
 end
 
+-- Flags
 -- Area visit flags (for area name popup) (7183)
 spec.sync[0x020f7180] = {size=4, kind="bitOr"}
 -- Room type tutorials (7187)
 spec.sync[0x020f7184] = {size=4, kind="bitOr"}
--- TODO verify event alignment
--- Item pickup alignment good (719d at size 1)
 -- Events, item pickups
 -- RC
 for i=0,0x1f do
 	spec.sync[0x020f7188 + i] = {kind="bitOr"}
 end
 -- Warp Rooms visited
--- AC
-spec.sync[0x020f71a8] = {size=2, kind="bitOr"}
+spec.sync[0x020f71a8] = {size=4, kind="bitOr"}
 
 -- Item Inventory
 for i=0,0x68,4 do
