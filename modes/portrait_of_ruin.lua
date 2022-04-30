@@ -10,12 +10,13 @@ local spec = {
 	guid = "d24854ff-1c15-4720-a700-854b9a575b4a",
 	format = "1.2",
 	name = "Castlevania: Portrait of Ruin",
-	pipe = "tcp",
 	match = {"stringtest", addr=0x023ffe00, value="CASTLEVANIA2ACBE"},
 	running = {"test", addr = 0x021119e0, size=4, gte = 1}, -- Using game clock as running test
 	sync = {},
 	custom = {},
 }
+
+-- TODO max ups (capped at 32 for both. No hearts)
 
 local CurrentMapIdAddress = 0x02111785
 local MapExplorationDataAddress = 0x02111794

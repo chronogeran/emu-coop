@@ -10,7 +10,6 @@ local spec = {
 	guid = "9f4d9002-51df-4a4e-966a-650adda6c3ad",
 	format = "1.2",
 	name = "Castlevania: Dawn of Sorrow",
-	pipe = "tcp",
 	match = {"stringtest", addr=0x0219c980, value="CASTLEVANIA1ACVE"},
 	running = {"test", addr = 0x020f703c, size=4, gte = 1}, -- Using game clock as running test
 	sync = {},

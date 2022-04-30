@@ -10,7 +10,6 @@ local spec = {
 	guid = "48455393-c02a-4ad0-b3ab-aca847e7128f",
 	format = "1.2",
 	name = "Castlevania: Symphony of the Night",
-	pipe = "tcp",
 	match = {"stringtest", addr=0x8000b8b0, value="cdrom:SLUS_000.67"},
 	running = function(value, size)
 		return
@@ -22,6 +21,8 @@ local spec = {
 	sync = {},
 	custom = {},
 }
+
+-- TODO max ups (HP & hearts)
 
 -- Events
 -- TODO alignment, range

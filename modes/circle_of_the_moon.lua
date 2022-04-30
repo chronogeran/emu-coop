@@ -17,13 +17,13 @@ local spec = {
 }
 
 -- Flags
--- RC,AC
+-- RC
 for i=0,0x84,4 do
 	spec.sync[0x02025370 + i] = {kind="bitOr", size=4}
 end
 
 -- Visit flags (one area per byte)
--- RC,AC
+-- RC
 for i=0,0x10,4 do
 	spec.sync[0x02025400 + i] = {kind="bitOr", size=4}
 end
@@ -34,7 +34,6 @@ end
 spec.sync[0x02025414] = {kind="delta", size=2}
 
 -- Map
--- AC
 for i=0,0x134,4 do
 	spec.sync[0x02025430 + i] = {kind="bitOr", size=4}
 end
@@ -42,7 +41,6 @@ end
 -- HP
 --spec.sync[0x0202562e] = {kind="delta", size=2}
 -- MP
--- AC
 --spec.sync[0x02025636] = {kind="delta", size=2}
 -- Hearts
 --spec.sync[0x0202563c] = {kind="delta", size=2}
@@ -53,18 +51,16 @@ end
 spec.sync[0x02025668] = {kind="delta", size=4}
 
 -- Cards
--- AC
 for i=0,0x10,4 do
 	spec.sync[0x02025674 + i] = {kind="bitOr", size=4}
 end
 
 -- Inventory
--- AC
 for i=0,0x34,4 do
 	spec.sync[0x020256ed + i] = {kind="delta", size=4}
 end
 
--- AC
+-- TODO verify that this updates actual maxes
 -- Max Hearts ups used
 spec.sync[0x0202572c] = {kind="delta"}
 -- Max HP ups used
@@ -73,7 +69,6 @@ spec.sync[0x0202572d] = {kind="delta"}
 spec.sync[0x0202572e] = {kind="delta"}
 
 -- Relics
--- AC
 spec.sync[0x0202572f] = {kind="bitOr", size=4}
 spec.sync[0x02025733] = {kind="bitOr", size=4}
 

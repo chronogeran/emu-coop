@@ -10,7 +10,6 @@ local spec = {
 	guid = "e3d39049-71a8-42f7-9675-ddf9715ba14e",
 	format = "1.2",
 	name = "Castlevania: Order of Ecclesia",
-	pipe = "tcp",
 	match = {"stringtest", addr=0x023ffa80, value="CASTLEVANIA3YR9E"},
 	running = {"test", addr = 0x02100374, size=4, gte = 1}, -- Using game clock as running test
 	sync = {},
@@ -18,6 +17,7 @@ local spec = {
 }
 
 -- TODO auto equip magnes
+-- TODO max ups (capped at 30 for all 3 types)
 
 -- HP
 --spec.sync[0x021002b4] = {size=2, kind="delta"}

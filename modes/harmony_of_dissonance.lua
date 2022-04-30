@@ -16,6 +16,8 @@ local spec = {
 	custom = {},
 }
 
+-- TODO max ups (HP, hearts)
+
 -- Map
 for i=0,0x278,4 do
 	spec.sync[0x02000090 + i] = {kind="bitOr", size=4}
@@ -62,7 +64,6 @@ for i=0,0x7f do
 	spec.sync[0x020187be + i] = {kind="delta"}
 end
 -- Spell Books
--- AC
 spec.sync[0x0201883e] = {kind="bitOr"}
 -- Relics
 spec.sync[0x0201883f] = {kind="bitOr", receiveTrigger=function(value, previousValue)
@@ -70,7 +71,6 @@ spec.sync[0x0201883f] = {kind="bitOr", receiveTrigger=function(value, previousVa
 	local currentEquips = memory.readword(0x02018841)
 	memory.writeword(0x02018841, OR(currentEquips, changedBits))
 end}
--- AC
 spec.sync[0x02018840] = {kind="bitOr", receiveTrigger=function(value, previousValue)
 	local changedBits = XOR(value, previousValue)
 	local currentEquips = memory.readword(0x02018842)
