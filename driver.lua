@@ -221,18 +221,19 @@ function GameDriver:childWake()
 		might use different alignments for the same address, we use this strategy where we call
 		caughtWrite for all addresses that may be associated with the triggered address.
 		This means caughtWrite must tolerate extra calls and ignore if nothing has changed.
-		This strategy allows you to use smaller alignments than the game, but not bigger.
-		For example, if you register size 4 at b8, and the game writes size 1 at bb, we will not
-		trigger the b8 callback, only bb-be.
 	--]]
 	local function theMemoryCallback(callbackAddr, value, flags)
 		print(string.format("callback %x %x %x", callbackAddr, value, flags))
-		-- Check all addresses this callback may be associated with
-		for i=0,registerSize-1 do
+		-- Check all addresses this callback may be associated with, both backward and forward.
+		for i=-registerSize+1,registerSize-1 do
 			local unalignedAddress = callbackAddr + i
 			local record = mainDriver.spec.sync[unalignedAddress]
 			if record then
-				mainDriver:caughtWrite(unalignedAddress, 0, record, record.size or 1)
+				local recordSize = record.size or 1
+				-- Only trigger records behind if their size is large enough to intersect
+				if unalignedAddress + recordSize > callbackAddr then
+					mainDriver:caughtWrite(unalignedAddress, 0, record, recordSize)
+				end
 			end
 		end
 	end
