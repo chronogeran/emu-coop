@@ -16,8 +16,6 @@ local spec = {
 	custom = {},
 }
 
--- TODO max ups (HP, hearts)
-
 -- Map
 for i=0,0x278,4 do
 	spec.sync[0x02000090 + i] = {kind="bitOr", size=4}
@@ -42,7 +40,7 @@ end
 -- Max HP
 spec.sync[0x02018786] = {size=2}
 -- Max MP
-spec.sync[0x02018788] = {size=2}
+--spec.sync[0x02018788] = {size=2}
 -- Max Hearts
 spec.sync[0x0201878a] = {size=2}
 
