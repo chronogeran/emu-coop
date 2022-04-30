@@ -75,6 +75,9 @@ spec.sync[0x02018840] = {kind="bitOr", receiveTrigger=function(value, previousVa
 	memory.writeword(0x02018842, OR(currentEquips, changedBits))
 end}
 
+-- Collectibles
+spec.sync[0x02018843] = {kind="bitOr", size=4}
+
 -- Enemy Info
 for i=0,0xc,4 do
 	spec.sync[0x02018854 + i] = {kind="bitOr", size=4}
