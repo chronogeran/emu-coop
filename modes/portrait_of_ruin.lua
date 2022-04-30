@@ -16,8 +16,6 @@ local spec = {
 	custom = {},
 }
 
--- TODO max ups (capped at 32 for both. No hearts)
-
 local CurrentMapIdAddress = 0x02111785
 local MapExplorationDataAddress = 0x02111794
 local MapPixelDataAddress = 0x02136900
@@ -47,10 +45,10 @@ for i=0,0x7 do
 			local bitNumber = (i % 4) * 2
 			local currentEquips = memory.readbyte(equipsAddress)
 			if equipHigh then
-				currentEquips = OR(currentEquips, BIT(bitNumber + 1)))
+				currentEquips = OR(currentEquips, BIT(bitNumber + 1))
 			end
 			if equipLow then
-				currentEquips = OR(currentEquips, BIT(bitNumber)))
+				currentEquips = OR(currentEquips, BIT(bitNumber))
 			end
 			memory.writebyte(equipsAddress, currentEquips)
 		end}
@@ -98,8 +96,28 @@ for i=0,0x40,4 do
 	spec.sync[0x02111eac + i] = {size=4, kind="bitOr"}
 end
 
+-- HP Max ups
+spec.sync[0x02111f5c] = {size=2, kind="delta", deltaMax=480, receiveTrigger=function(value, previousValue)
+	-- Update current and max when receiving
+	-- TODO test
+	memory.writeword(0x0211216c, memory.readword(0x0211216c) + value)
+	memory.writeword(0x0211216e, memory.readword(0x0211216e) + value)
+end}
+-- MP Max ups
+spec.sync[0x02111f5e] = {size=2, kind="delta", deltaMax=300, receiveTrigger=function(value, previousValue)
+	-- TODO test
+	memory.writeword(0x02112170, memory.readword(0x02112170) + value)
+	memory.writeword(0x02112172, memory.readword(0x02112172) + value)
+end}
+
 -- HP
---spec.sync[0x02---] = {size=2, kind="delta"}
+--spec.sync[0x0211216c] = {size=2, kind="delta"}
+-- Max HP
+--spec.sync[0x0211216e] = {size=2, kind="delta"}
+-- MP
+--spec.sync[0x02112170] = {size=2, kind="delta"}
+-- Max MP
+--spec.sync[0x02112172] = {size=2, kind="delta"}
 
 -- EXP
 spec.sync[0x021121c0] = {size=4, kind="delta", deltaMin=0, deltaMax=99999999}
