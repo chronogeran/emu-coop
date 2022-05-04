@@ -22,25 +22,25 @@ local spec = {
 	custom = {},
 }
 
--- TODO max ups (HP & hearts)
-
 -- Events
--- TODO alignment, range
-for i=0,0xff,4 do
+-- range?
+for i=0,0x128,4 do
 	spec.sync[0x8003be20 + i] = {size=4, kind="bitOr"}
 end
 
-local function pixelDataOffset(pixelX, pixelY)
-	return 0x89e80 + (pixelY * 0x800) + math.floor(pixelX / 2)
+local function pixelDataOffset(pixelX, pixelY, isNormalCastle)
+	local offset = (pixelY * 0x800) + math.floor(pixelX / 2)
+	if isNormalCastle then return 0x89e80 + offset
+	else return 0xee6ff - offset end
 end
 
 spec.custom["mapData"] = function(payload)
-	local pixelX, pixelY = payload[1], payload[2]
-	local i = 3
+	local isNormalCastle, pixelX, pixelY = payload[1] == 1, payload[2], payload[3]
+	if isNormalCastle ~= isInNormalCastle() then return end
+	local i = 4
 	for y=pixelY, pixelY + 4 do
 		for x=pixelX, pixelX + 4, 2 do
-			-- TODO perhaps only write the first nibble on the third x byte
-			local offset = pixelDataOffset(x, y)
+			local offset = pixelDataOffset(x, y, isNormalCastle)
 			memory.writebyte(offset, payload[i], "GPURAM")
 			i = i + 1
 		end
@@ -49,12 +49,30 @@ end
 
 -- Rooms count
 -- Delta could be bad if both people explore the same room at the same time
+-- Could instead increment whenever we receive exploration data that's new
 spec.sync[0x8003c760] = {size=4, kind="delta"}
+
+function isInNormalCastle()
+	local zoneAddress = memory.readdword(0x800987d8)
+	return (zoneAddress == 0x0028c0 or
+		zoneAddress == 0x009420 or
+		zoneAddress == 0x00de90 or
+		zoneAddress == 0x00df10 or
+		zoneAddress == 0x0151c0 or
+		zoneAddress == 0x016250 or
+		zoneAddress == 0x016960 or
+		zoneAddress == 0x018d10 or
+		zoneAddress == 0x019ad0 or
+		zoneAddress == 0x019ca0 or
+		zoneAddress == 0x019d00 or
+		zoneAddress == 0x019fd0 or
+		zoneAddress == 0x01a060 or
+		zoneAddress == 0x01a3a0)
+end
 
 -- Map exploration
 -- Strategy here: calculate graphics offset from exploration change, then send graphics data
--- TODO figure out inverted castle
-for i=0,0x32f do
+for i=0,0x76f do
 	spec.sync[0x8006bbc4 + i] = {kind="bitOr", 
 	writeTrigger=function(value, previousValue, forceSend)
 		if value == previousValue then return end
@@ -71,16 +89,24 @@ for i=0,0x32f do
 		elseif changedBitNumber == 2 then smallX = 2
 		elseif changedBitNumber == 0 then smallX = 3
 		else return end
-		local mapX = (i % 0x10) * 4 + smallX
-		local mapY = math.floor(i / 0x10)
+		local isNormalCastle = i < 0x330
+		local exOffset = i
+		if not isNormalCastle then exOffset = i - 0x440 end
+		local mapX = (exOffset % 0x10) * 4 + smallX
+		local mapY = math.floor(exOffset / 0x10)
 		local pixelX = mapX * 4
 		local pixelY = mapY * 4 + 1
+		if not isNormalCastle then
+			pixelX = pixelX - 1
+			pixelY = pixelY - 1
+		end
 		mainDriver:executeNextFrame(function()
-			local payload = {pixelX, pixelY}
-			local i = 3
+			local payload = {1, pixelX, pixelY}
+			if not isNormalCastle then payload[1] = 0 end
+			local i = 4
 			for y=pixelY, pixelY + 4 do
 				for x=pixelX, pixelX + 4, 2 do
-					local offset = pixelDataOffset(x, y)
+					local offset = pixelDataOffset(x, y, isNormalCastle)
 					payload[i] = memory.readbyte(offset, "GPURAM")
 					i = i + 1
 				end
@@ -91,58 +117,56 @@ for i=0,0x32f do
 end
 
 -- Relics
--- TODO alignment
 for i=0,0x1d do
 	-- TODO equip when receiving, but not familiars?
 	spec.sync[0x80097964 + i] = {size=1, mask=0x01, kind="bitOr"}
 end
 
 -- Spells
--- TODO alignment
 for i=0,7,4 do
 	spec.sync[0x80097982 + i] = {size=4}
 end
 
 -- Inventory
--- TODO alignment
 for i=0,0xff,4 do
 	spec.sync[0x8009798c + i] = {size=4, kind="delta"}
 end
 
+-- Sync max HP and hearts for max ups
 -- HP
 --spec.sync[0x80097ba0] = {size=4, kind="delta", deltaMin=0}
 -- Max HP
---spec.sync[0x80097ba4] = {size=4, kind="delta", deltaMin=0}
+spec.sync[0x80097ba4] = {size=4, kind="delta", deltaMin=0}
 -- Hearts
 --spec.sync[0x80097ba8] = {size=4, kind="delta", deltaMin=0}
 -- Max Hearts
---spec.sync[0x80097bac] = {size=4, kind="delta", deltaMin=0}
+spec.sync[0x80097bac] = {size=4, kind="delta", deltaMin=0}
 -- MP
 --spec.sync[0x80097bb0] = {size=4, kind="delta", deltaMin=0}
 -- Max MP
 --spec.sync[0x80097bb4] = {size=4, kind="delta", deltaMin=0}
 
 -- EXP
-spec.sync[0x80097bec] = {size=4, kind="delta", deltaMin=0}
+spec.sync[0x80097bec] = {size=4, kind="delta", deltaMin=0, deltaMax=9999999}
 -- Gold
-spec.sync[0x80097bf0] = {size=4, kind="delta", deltaMin=0}
+spec.sync[0x80097bf0] = {size=4, kind="delta", deltaMin=0, deltaMax=999999}
 -- Kills
-spec.sync[0x80097bf4] = {size=4, kind="delta", deltaMin=0}
+spec.sync[0x80097bf4] = {size=4, kind="delta", deltaMin=0, deltaMax=999999}
 
--- Familiar Levels
-spec.sync[0x80097c44] = {size=4, kind="delta"}
-spec.sync[0x80097c48] = {size=4, kind="delta"}
-spec.sync[0x80097c50] = {size=4, kind="delta"}
-spec.sync[0x80097c54] = {size=4, kind="delta"}
-spec.sync[0x80097c5c] = {size=4, kind="delta"}
-spec.sync[0x80097c60] = {size=4, kind="delta"}
-spec.sync[0x80097c68] = {size=4, kind="delta"}
-spec.sync[0x80097c6c] = {size=4, kind="delta"}
-spec.sync[0x80097c74] = {size=4, kind="delta"}
-spec.sync[0x80097c78] = {size=4, kind="delta"}
-spec.sync[0x80097c80] = {size=4, kind="delta"}
-spec.sync[0x80097c84] = {size=4, kind="delta"}
-spec.sync[0x80097c8c] = {size=4, kind="delta"}
-spec.sync[0x80097c90] = {size=4, kind="delta"}
+-- Familiar Levels & XP
+spec.sync[0x80097c44] = {size=4}
+spec.sync[0x80097c48] = {size=4, kind="delta", deltaMin=0, deltaMax=9899}
+spec.sync[0x80097c50] = {size=4}
+spec.sync[0x80097c54] = {size=4, kind="delta", deltaMin=0, deltaMax=9899}
+spec.sync[0x80097c5c] = {size=4}
+spec.sync[0x80097c60] = {size=4, kind="delta", deltaMin=0, deltaMax=9899}
+spec.sync[0x80097c68] = {size=4}
+spec.sync[0x80097c6c] = {size=4, kind="delta", deltaMin=0, deltaMax=9899}
+spec.sync[0x80097c74] = {size=4}
+spec.sync[0x80097c78] = {size=4, kind="delta", deltaMin=0, deltaMax=9899}
+spec.sync[0x80097c80] = {size=4}
+spec.sync[0x80097c84] = {size=4, kind="delta", deltaMin=0, deltaMax=9899}
+spec.sync[0x80097c8c] = {size=4}
+spec.sync[0x80097c90] = {size=4, kind="delta", deltaMin=0, deltaMax=9899}
 
 return spec
