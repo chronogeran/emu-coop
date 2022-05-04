@@ -278,6 +278,7 @@ function isByteArray(t)
 	for _ in pairs(t) do
 		i = i + 1
 		if t[i] == nil then return false end
+		if type(t[i]) ~= "number" then return false end
 		if t[i] < 0 or t[i] > 255 then return false end
 	end
 	return true
