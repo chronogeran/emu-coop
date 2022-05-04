@@ -28,6 +28,11 @@ for i=0,0x128,4 do
 	spec.sync[0x8003be20 + i] = {size=4, kind="bitOr"}
 end
 
+-- Time Attack
+for i=0,0x73,4 do
+	spec.sync[0x8003ca28 + i] = {size=4}
+end
+
 local function pixelDataOffset(pixelX, pixelY, isNormalCastle)
 	local offset = (pixelY * 0x800) + math.floor(pixelX / 2)
 	if isNormalCastle then return 0x89e80 + offset
