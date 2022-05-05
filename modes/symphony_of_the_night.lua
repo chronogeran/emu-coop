@@ -24,8 +24,23 @@ local spec = {
 
 -- Events
 -- range?
-for i=0,0x128,4 do
-	spec.sync[0x8003be20 + i] = {size=4, kind="bitOr"}
+for i=0,0x128 do
+	spec.sync[0x8003be20 + i] = {kind="bitOr", receiveTrigger=function(value, previousValue)
+		if i ~= 1 then return end
+		if AND(XOR(value, previousValue), 0x01) == 0 then return end
+		-- Encounter with Death. Remove equipment if applicable.
+		-- Inventory is already synced, so no need to check there.
+		local rightHand = memory.readbyte(0x80097c00)
+		if rightHand == 0x10 or rightHand == 0x7b then memory.writebyte(0x80097c00, 0) end
+		local leftHand = memory.readbyte(0x80097c04)
+		if leftHand == 0x10 or leftHand == 0x7b then memory.writebyte(0x80097c04, 0) end
+		if memory.readbyte(0x80097c08) == 0x2d then memory.writebyte(0x80097c08, 0x1a) end
+		if memory.readbyte(0x80097c0c) == 0x0f then memory.writebyte(0x80097c0c, 0) end
+		if memory.readbyte(0x80097c10) == 0x38 then memory.writebyte(0x80097c10, 0x30) end
+		if memory.readbyte(0x80097c14) == 0x4e then memory.writebyte(0x80097c14, 0x39)
+		elseif memory.readbyte(0x80097c18) == 0x4e then memory.writebyte(0x80097c18, 0x39) end
+		-- TODO recalculate stats and such?
+	end}
 end
 
 -- Time Attack
@@ -123,8 +138,12 @@ end
 
 -- Relics
 for i=0,0x1d do
-	-- TODO equip when receiving, but not familiars?
-	spec.sync[0x80097964 + i] = {size=1, mask=0x01, kind="bitOr"}
+	spec.sync[0x80097964 + i] = {size=1, mask=0x01, kind="bitOr", receiveTrigger=function(value, previousValue)
+		-- equip when receiving, but not familiars
+		if value == 1 and previousValue == 0 and (i <= 0x11 or i >= 0x19) then
+			memory.writebyte(0x80097964 + i, 0x3)
+		end
+	end}
 end
 
 -- Spells
@@ -133,8 +152,8 @@ for i=0,7,4 do
 end
 
 -- Inventory
-for i=0,0xff,4 do
-	spec.sync[0x8009798c + i] = {size=4, kind="delta"}
+for i=0,0x101 do
+	spec.sync[0x8009798b + i] = {kind="delta"}
 end
 
 -- Sync max HP and hearts for max ups
