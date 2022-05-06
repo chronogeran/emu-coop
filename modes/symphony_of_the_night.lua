@@ -29,7 +29,7 @@ for i=0,0x128 do
 		if i ~= 1 then return end
 		if AND(XOR(value, previousValue), 0x01) == 0 then return end
 		-- Encounter with Death. Remove equipment if applicable.
-		-- Inventory is already synced, so no need to check there.
+		-- Just zero out all locations since there may be many players with the items in different places
 		local rightHand = memory.readbyte(0x80097c00)
 		if rightHand == 0x10 or rightHand == 0x7b then memory.writebyte(0x80097c00, 0) end
 		local leftHand = memory.readbyte(0x80097c04)
@@ -37,8 +37,14 @@ for i=0,0x128 do
 		if memory.readbyte(0x80097c08) == 0x2d then memory.writebyte(0x80097c08, 0x1a) end
 		if memory.readbyte(0x80097c0c) == 0x0f then memory.writebyte(0x80097c0c, 0) end
 		if memory.readbyte(0x80097c10) == 0x38 then memory.writebyte(0x80097c10, 0x30) end
-		if memory.readbyte(0x80097c14) == 0x4e then memory.writebyte(0x80097c14, 0x39)
-		elseif memory.readbyte(0x80097c18) == 0x4e then memory.writebyte(0x80097c18, 0x39) end
+		if memory.readbyte(0x80097c14) == 0x4e then memory.writebyte(0x80097c14, 0x39) end
+		if memory.readbyte(0x80097c18) == 0x4e then memory.writebyte(0x80097c18, 0x39) end
+		memory.writebyte(0x8009799a, 0) -- Alucard Shield
+		memory.writebyte(0x80097a05, 0) -- Alucard Sword
+		memory.writebyte(0x80097a42, 0) -- Alucard Mail
+		memory.writebyte(0x80097a60, 0) -- Dragon Helm
+		memory.writebyte(0x80097a6b, 0) -- Twilight Cloak
+		memory.writebyte(0x80097a81, 0) -- Necklace of J
 		-- TODO recalculate stats and such?
 	end}
 end
@@ -67,11 +73,6 @@ spec.custom["mapData"] = function(payload)
 	end
 end
 
--- Rooms count
--- Delta could be bad if both people explore the same room at the same time
--- Could instead increment whenever we receive exploration data that's new
-spec.sync[0x8003c760] = {size=4, kind="delta"}
-
 function isInNormalCastle()
 	local zoneAddress = memory.readdword(0x800987d8)
 	return (zoneAddress == 0x0028c0 or
@@ -94,6 +95,11 @@ end
 -- Strategy here: calculate graphics offset from exploration change, then send graphics data
 for i=0,0x76f do
 	spec.sync[0x8006bbc4 + i] = {kind="bitOr", 
+	receiveTrigger=function(value, previousValue)
+		if value == previousValue then return end
+		-- New exploration data: increment room count
+		memory.writedword(0x8003c760, memory.readdword(0x8003c760) + 1)
+	end,
 	writeTrigger=function(value, previousValue, forceSend)
 		if value == previousValue then return end
 		local changedBits = XOR(value, previousValue)
