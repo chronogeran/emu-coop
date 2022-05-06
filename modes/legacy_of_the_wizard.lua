@@ -25,6 +25,8 @@ local spec = {
 	custom = {},
 }
 
+-- Bosses are tracked by number of crowns possessed
+
 -- Health
 spec.sync[0x58] = {}
 -- Magic
@@ -37,8 +39,13 @@ spec.sync[0x5b] = {}
 for i=0,0xf do
 	spec.sync[0x60 + i] = {}
 end
-
--- TODO bosses defeated
--- TODO checkpoint 0x300-321
+-- Chests. Bit is set initially, then cleared when item in chest is collected.
+for i=0,0xf do
+	spec.sync[0x300 + i] = {kind="flags"}
+end
+-- Checkpoint data - inventory, keys, gold
+for i=0,0x11 do
+	spec.sync[0x300 + i] = {}
+end
 
 return spec
