@@ -16,8 +16,6 @@ local spec = {
 	custom = {},
 }
 
--- TODO auto equip magnes
-
 -- HP
 --spec.sync[0x021002b4] = {size=2, kind="delta"}
 -- Max HP
@@ -68,8 +66,17 @@ for i=0,0x31,4 do
 	spec.sync[0x021003e8 + i] = {size=4, kind="bitOr"}
 end
 -- R Glyphs
-for i=0,0x17,4 do
-	spec.sync[0x02100420 + i] = {size=4, kind="bitOr"}
+spec.sync[0x02100420] = {size=4, kind="bitOr", receiveTrigger=function(value, previousValue)
+	if value == previousValue then return end
+	-- Equip Magnes when receiving for the first time
+	-- TODO test
+	local changedBits = XOR(value, previousValue)
+	if AND(0xff00, previousValue) == 0 and AND(value, 0x0100) > 0 then
+		memory.writebyte(0x021002c4, 1)
+	end
+end}
+for i=0,0x13,4 do
+	spec.sync[0x02100424 + i] = {size=4, kind="bitOr"}
 end
 
 -- Relics & Inventory
