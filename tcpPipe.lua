@@ -109,6 +109,12 @@ function TcpClientOnServer:_init(serverPipe)
 end
 
 function TcpClientOnServer:handle(s)
+	if #s == 0 then
+		print("Client disconnected")
+		self:exit()
+		return
+	end
+
 	self.serverPipe:handle(s, self)
 end
 
