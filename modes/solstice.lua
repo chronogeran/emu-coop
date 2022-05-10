@@ -6,6 +6,8 @@
 -- Author: Chronogeran
 -- This file is available under Creative Commons CC0
 
+-- NOTE: FCEUX does not support writing to the PPU, so this game won't work there.
+
 local spec = {
 	guid = "f045e72d-be3f-4259-a7f4-ec54fea70cee",
 	format = "1.2",
@@ -25,6 +27,11 @@ local spec = {
 
 -- TODO detonators (might be part of progress data)
 -- TODO credits
+	-- 788 also related to credit used?
+	-- 79f held credits, bitwise, first one goes to bit 80
+	-- 7a1 continue timer
+	-- 7a7 set when you continue?
+	-- 7b9 used credits, bitwise. diff with 79f used to tell you how many credits you have at continue screen.
 
 -- Green Potion
 spec.sync[0x784] = {}
