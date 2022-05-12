@@ -11,7 +11,7 @@ local spec = {
 	format = "1.2",
 	name = "Castlevania: Harmony of Dissonance",
 	match = {"stringtest", addr=0x080000a0, value="CASTLEVANIA1"},
-	--running = {"test", addr = 0x020f703c, size=4, gte = 1}, -- Using game clock as running test
+	running = {"test", addr = 0x02000088, size=4, gte = 1}, -- Using game clock as running test
 	sync = {},
 	custom = {},
 }
@@ -24,8 +24,7 @@ end
 -- Visit flags
 spec.sync[0x0200030e] = {kind="bitOr", size=2}
 -- Flags
--- RC
-for i=0,0x70,4 do
+for i=0,0x48,4 do
 	spec.sync[0x02000310 + i] = {kind="bitOr", size=4}
 end
 
@@ -37,6 +36,7 @@ end
 --spec.sync[0x02018794] = {kind="delta", size=2}
 
 -- Not using delta on these so we don't get double level ups
+-- Need to sync HP & Hearts for Max Ups
 -- Max HP
 spec.sync[0x02018786] = {size=2}
 -- Max MP
