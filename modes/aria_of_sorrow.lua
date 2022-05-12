@@ -18,7 +18,6 @@ local spec = {
 }
 
 -- Map
--- AC
 for i=0,0x278,4 do
 	spec.sync[0x020000b8 + i] = {kind="bitOr", size=4}
 end
@@ -33,6 +32,11 @@ spec.sync[0x0200037c] = {kind="bitOr", size=2}
 -- Bosses
 spec.sync[0x0200037e] = {kind="bitOr", size=2}
 
+-- HP
+--spec.sync[0x0201327a] = {kind="delta", size=2}
+-- MP
+--spec.sync[0x0201327c] = {kind="delta", size=2}
+
 -- EXP
 spec.sync[0x0201328c] = {kind="delta", size=4}
 -- Gold
@@ -44,7 +48,6 @@ for i=0,0xfd do
 end
 
 -- Ability Souls
--- AC (could be 1)
 local equippedAbilitiesAddr = 0x02013396
 spec.sync[0x02013392] = {kind="delta", size=4, receiveTrigger=function(value, previousValue)
 	local val = value
@@ -61,12 +64,6 @@ spec.sync[0x02013392] = {kind="delta", size=4, receiveTrigger=function(value, pr
 	end
 end
 }
---for i=0,2 do
-	--spec.sync[0x02013392 + i] = {kind="delta", receiveTrigger=function(value, previousValue)
-		-- Equip abilities when receiving them
-		--if AND(value, 0xf) == 1 and AND(previousValue, 0xf) == 0 then
-			--local existingByte = memory.readbyte(equippedAbilitiesAddr)
-			--memory.writebyte(equippedAbilitiesAddr, OR(existingByte, 0x1)
 
 -- Enemy data
 for i=0,0xc,4 do
