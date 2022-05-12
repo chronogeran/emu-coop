@@ -23,7 +23,6 @@ local spec = {
 }
 
 -- Events
--- range?
 for i=0,0x128 do
 	spec.sync[0x8003be20 + i] = {kind="bitOr", receiveTrigger=function(value, previousValue)
 		if i ~= 1 then return end
