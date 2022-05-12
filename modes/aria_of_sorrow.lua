@@ -12,7 +12,7 @@ local spec = {
 	format = "1.2",
 	name = "Castlevania: Aria of Sorrow",
 	match = {"stringtest", addr=0x080000a0, value="CASTLEVANIA2"},
-	--running = {"test", addr = 0x020f703c, size=4, gte = 1}, -- Using game clock as running test
+	running = {"test", addr = 0x020000ac, size=4, gte = 1}, -- Using game clock as running test
 	sync = {},
 	custom = {},
 }
@@ -23,7 +23,6 @@ for i=0,0x278,4 do
 end
 
 -- Flags
--- TODO range
 for i=0,0x38,4 do
 	spec.sync[0x02000340 + i] = {kind="bitOr", size=4}
 end
