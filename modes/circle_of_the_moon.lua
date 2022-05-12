@@ -11,31 +11,29 @@ local spec = {
 	format = "1.2",
 	name = "Castlevania: Circle of the Moon",
 	match = {"stringtest", addr=0x080000a0, value="DRACULA AGB1"},
-	--running = {"test", addr = 0x020f703c, size=4, gte = 1}, -- Using game clock as running test
+	running = {"test", addr = 0x020253f8, size=4, gte = 1}, -- Using game clock as running test
 	sync = {},
 	custom = {},
 }
 
 -- Flags
--- RC
-for i=0,0x84,4 do
+for i=0,0x80,4 do
 	spec.sync[0x02025370 + i] = {kind="bitOr", size=4}
 end
 
 -- Visit flags (one area per byte)
--- RC
 for i=0,0x10,4 do
 	spec.sync[0x02025400 + i] = {kind="bitOr", size=4}
 end
 
--- Rooms explored
--- TODO Delta presents a problem if you explore same room at same time, but plain has the problem if you explore different rooms
--- Maybe drive from map data
-spec.sync[0x02025414] = {kind="delta", size=2}
-
 -- Map
 for i=0,0x134,4 do
-	spec.sync[0x02025430 + i] = {kind="bitOr", size=4}
+	spec.sync[0x02025430 + i] = {kind="bitOr", size=4,
+		receiveTrigger=function(value, previousValue)
+			if value == previousValue then return end
+			-- New exploration data: increment room count
+			memory.writeword(0x02025414, memory.readword(0x02025414) + 1)
+		end}
 end
 
 -- HP
@@ -60,7 +58,6 @@ for i=0,0x34,4 do
 	spec.sync[0x020256ed + i] = {kind="delta", size=4}
 end
 
--- TODO verify that this updates actual maxes
 -- Max Hearts ups used
 spec.sync[0x0202572c] = {kind="delta"}
 -- Max HP ups used
