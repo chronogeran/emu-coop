@@ -24,6 +24,8 @@ spec.sync[0x501] = {kind="delta", deltaMin=0}
 spec.sync[0x502] = {kind="delta", deltaMin=0}
 -- Health
 spec.sync[0x503] = {kind="delta", deltaMin=0}
+-- Health Containers
+spec.sync[0x507] = {}
 
 -- Items
 spec.sync[0x509] = {kind="bitOr"}
