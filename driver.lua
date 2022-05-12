@@ -223,7 +223,6 @@ function GameDriver:childWake()
 		This means caughtWrite must tolerate extra calls and ignore if nothing has changed.
 	--]]
 	local function theMemoryCallback(callbackAddr, value, flags)
-		print(string.format("callback %x %x %x", callbackAddr, value, flags))
 		-- Check all addresses this callback may be associated with, both backward and forward.
 		for i=-registerSize+1,registerSize-1 do
 			local unalignedAddress = callbackAddr + i
@@ -253,6 +252,18 @@ function GameDriver:childWake()
 				self.registeredAddresses[alignedAddress] = true
 			end
 			s = math.floor(s / 2)
+		end
+
+		-- Also register ahead in case a size was requested that's bigger than the actual writes
+		-- Modes should not have any overlap in their registration. It's possible we get bad behavior if
+		-- we pass a size 1 here but that conflicts with a different sync table.
+		for s = 1,size-1 do
+			local inflatedAddress = k + s
+			if not self.registeredAddresses[inflatedAddress] then
+				-- size arg is used in FCEUX & snes9x
+				memory.registerwrite(inflatedAddress, 1, theMemoryCallback)
+				self.registeredAddresses[inflatedAddress] = true
+			end
 		end
 	end
 end
