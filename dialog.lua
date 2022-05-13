@@ -10,11 +10,12 @@ function readsettings(filename)
 		end
 	end
 
-	local defaults = {["isServer"]=false, ["server"]="127.0.0.1", ["port"]="5968"}
+	local defaults = {["isServer"]=false, ["server"]="127.0.0.1", ["port"]="5968", ["nickname"]="User"..math.random(99999)}
 	local f = io.open(filename)
 	readline(f, defaults, "isServer")
 	readline(f, defaults, "server")
 	readline(f, defaults, "port")
+	readline(f, defaults, "nickname")
 	defaults.isServer = defaults.isServer == "true"
 	f:close()
 	return defaults
@@ -28,6 +29,7 @@ function writesettings(filename, data)
 	f:write(line .. "\n")
 	f:write("server=" .. data.server .. "\n")
 	f:write("port=" .. data.port .. "\n")
+	f:write("nickname=" .. data.nickname .. "\n")
 	f:close()
 end
 
@@ -46,6 +48,7 @@ if BizHawk then
 		if defaults.isServer then forms.setproperty(h_isServer, "Checked", true) end
 		local h_serverName = forms.textbox(f, defaults.server, 100, 25, nil, 5, 35)
 		local h_port = forms.textbox(f, defaults.port, 50, 25, nil, 5, 65)
+		local h_nickname = forms.textbox(f, defaults.nickname, 50, 25, nil, 5, 95)
 		function onOk()
 			result = {}
 			result.startAsServer = forms.ischecked(h_isServer)

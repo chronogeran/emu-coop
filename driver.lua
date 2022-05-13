@@ -203,7 +203,7 @@ function GameDriver:childTick()
 end
 
 function GameDriver:childWake()
-	self:sendTable {"hello", version=version.release, guid=self.spec.guid}
+	self:sendTable {"hello", version=version.release, guid=self.spec.guid, nickname=self.pipe.data.nickname}
 
 	if driverDebug then print("Registering callbacks") end
 	-- Register memory callbacks
@@ -368,7 +368,7 @@ function GameDriver:handleTable(t)
 				if names then
 					local verb = record.verb or "got"
 					for i, v in ipairs(names) do
-						message("Partner " .. verb .. " " .. v)
+						message(self.pipe:getPartnerName(t.clientId) .. " " .. verb .. " " .. v)
 					end
 				else
 					if driverDebug then print("Updated anonymous address " .. tostring(addr) .. " to " .. tostring(value)) end

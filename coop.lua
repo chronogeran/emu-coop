@@ -101,6 +101,7 @@ if emu.emulating() then
 					if not nonempty(data.server) then scrub("Server") end
 				end
 				if not nonzero(data.port) then scrub("Port") end
+				if not nonempty(data.nickname) then scrub("Nickname") end
 
 				-- Save input for next run
 				writesettings("serversettings.txt", data)

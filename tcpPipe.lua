@@ -18,6 +18,15 @@ function TcpClientPipe:_init(data, driver)
 	self.connected = false
 end
 
+function TcpClientPipe:getPartnerName(clientId)
+	for i=1,#self.playerlist do
+		if self.playerlist[i].id == clientId then
+			return self.clients[i].nickname
+		end
+	end
+	return "Partner"
+end
+
 function TcpClientPipe:childWake() end
 
 function TcpClientPipe:childTick()
@@ -67,8 +76,8 @@ function TcpClientPipe:receivePump()
 	return true
 end
 
-function TcpClientPipe:msg(s)
-	self:send(s)
+function TcpClientPipe:msg(t)
+	self:send(serializeTable(t))
 end
 
 function TcpClientPipe:send(s, suppressDebugMessage)
@@ -95,7 +104,13 @@ function TcpClientPipe:handle(s)
 	end
 
 	t = deserializeTable(s)
-	self.driver:handle(t)
+
+	if t[1] == "playerlist" then
+		self.playerlist = t.list
+		if pipeDebug then print("Player List received") end
+	else
+		self.driver:handle(t)
+	end
 	
 	-- TODO add handshake (version check)
 end
@@ -135,6 +150,16 @@ function TcpServerPipe:_init(data, driver)
 	self.data = data
 	self.driver = driver
 	self.clients = {}
+	self.nextClientId = 1
+end
+
+function TcpServerPipe:getPartnerName(clientId)
+	for i=1,#self.clients do
+		if self.clients[i].id == clientId then
+			return self.clients[i].nickname
+		end
+	end
+	return "Partner"
 end
 
 function TcpServerPipe:childWake()
@@ -167,6 +192,8 @@ function TcpServerPipe:receivePump()
 			clientObject.connected = true
 			table.insert(self.clients, clientObject)
 			clientObject:wake(newClient)
+			clientObject.id = self.nextClientId
+			self.nextClientId = self.nextClientId + 1
 			print("Client connected")
 			clientObject:send(self.helloMessage)
 		else
@@ -185,8 +212,8 @@ function TcpServerPipe:receivePump()
 	end
 end
 
-function TcpServerPipe:msg(s)
-	self:send(s)
+function TcpServerPipe:msg(t)
+	self:send(serializeTable(t))
 end
 
 function TcpServerPipe:send(s)
@@ -208,6 +235,22 @@ function TcpServerPipe:send(s)
 	end
 end
 
+function TcpServerPipe:sendPlayerList(exceptToClient)
+	local reg = {"playerlist",list={{id=0, nickname=self.data.nickname}}
+	for i=1,#self.clients do
+		table.insert(reg.list, {id=self.clients[i].id, nickname=self.clients[i].nickname})
+	end
+
+	local s = serializeTable(reg)
+	for i=#self.clients,1,-1 do
+		if self.clients[i] ~= exceptToClient then
+			if not self.clients[i]:send(s, true) then
+				table.remove(self.clients, i)
+			end
+		end
+	end
+end
+
 function TcpServerPipe:handle(s, originClient)
 	if pipeDebug then print("RECV: " .. toHexString(s)) end
 
@@ -215,8 +258,16 @@ function TcpServerPipe:handle(s, originClient)
 	t = deserializeTable(s)
 	self.driver:handle(t)
 
-	-- Don't need to replicate hello out
-	if s:byte(1) == 1 then return end
+	if t[1] == "hello" then
+		originClient.nickname = t.nickname
+		if pipeDebug then print("Registered " .. originClient.nickname) end
+		-- Don't need to replicate hello out, but we do need to update playerlist
+		self:sendPlayerList(originClient)
+		return
+	end
+
+	-- Set client ID of message (always byte 2)
+	s[2] = string.char(originClient.id)
 
 	-- Send to all other clients
 	for i=#self.clients,1,-1 do
@@ -238,7 +289,7 @@ end
 Message Format
 * 1 byte length prefix (outside of message)
 * 1 byte opcode
-	1: hello
+	1: hello (or other prettyprinted table)
 	Default Table:
 	2: 2 byte address
 	3: 3 byte address
@@ -256,10 +307,12 @@ Message Bodies by Opcode
 Hello (1)
 	* pretty.write of table
 Default Table (2-10)
-	* 2 or 3 bytes address
+	* 1 byte client ID (ignored if sent to server)
+	* 2-4 bytes address
 	* 1 byte value size
 	* x bytes value
 Custom Message (20)
+	* 1 byte client ID (ignored if sent to server)
 	* 1 byte name length
 	* x bytes name
 	* 1 byte table type (00: byte stream, 01: generic object)
@@ -309,10 +362,12 @@ end
 function serializeTable(t)
 	local s = ""
 	if t[1] then
-		if t[1] == "hello" then -- Handshake
+		if t[1] == "hello" or t[1] == "playerlist" then -- Handshake
 			s = string.char(1) .. pretty.write(t)
 		else
 			s = string.char(20)
+			-- Client ID. Always 0 because clients don't know, and server is 0
+			s = s .. string.char(0)
 			-- Name
 			s = s .. string.char(#t[2])
 			s = s .. t[2]
@@ -377,36 +432,43 @@ function deserializeTable(s)
 	elseif opcode >= 2 and opcode <= 19 then
 		-- Default table
 
+		-- client ID
+		local clientId = s:byte(2)
+
 		-- address
 		local addressSize = opcode
 		if opcode >= 5 and opcode <= 7 then addressSize = opcode - 3
 		elseif opcode >= 8 and opcode <= 10 then addressSize = opcode - 6 end
 		local addr = 0
 		for i = 1,addressSize do
-			addr = addr + SHIFT(s:byte(i + 1), -8 * (i - 1))
+			addr = addr + SHIFT(s:byte(i + 2), -8 * (i - 1))
 		end
 
 		-- value size
-		local valueSize = s:byte(2 + addressSize)
+		local valueSize = s:byte(3 + addressSize)
 
 		-- value
-		local value = readNumberFromBuffer(s, 2 + addressSize, valueSize)
+		local value = readNumberFromBuffer(s, 3 + addressSize, valueSize)
 		if opcode >= 5 and opcode <= 7 then
 			-- negative
 			value = value - SHIFT(1, -valueSize * 8)
 		elseif opcode >= 8 and opcode <= 10 then
 			-- flags
-			value = { value, readNumberFromBuffer(s, 2 + addressSize + valueSize, valueSize) }
+			value = { value, readNumberFromBuffer(s, 3 + addressSize + valueSize, valueSize) }
 		end
 
-		return {addr=addr, value=value}
+		return {addr=addr, value=value, clientId=clientId}
 
 	elseif opcode == 20 then
 		local result = {"custom"}
+
+		-- client ID
+		local clientId = s:byte(2)
+
 		-- Name
-		local nameLength = s:byte(2)
-		local name = s:sub(3, 2 + nameLength)
-		local i = 3 + nameLength
+		local nameLength = s:byte(3)
+		local name = s:sub(4, 3 + nameLength)
+		local i = 4 + nameLength
 
 		-- Payload
 		local payload = nil
@@ -424,6 +486,6 @@ function deserializeTable(s)
 			payload = pretty.read(s:sub(payloadStartIndex))
 		end
 
-		return {"custom", name, payload}
+		return {"custom", name, payload, clientId}
 	end
 end

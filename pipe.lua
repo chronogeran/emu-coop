@@ -202,7 +202,8 @@ function IrcPipe:whoisCheck() -- TODO: Check on timer
 	statusMessage("Searching for partner...")
 end
 
-function IrcPipe:msg(s)
+function IrcPipe:msg(t)
+	s = serializeTable(t)
 	self:send("PRIVMSG " .. self.data.partner .. " :" .. s)
 end
 
@@ -217,7 +218,7 @@ function Driver:wake(pipe)
 end
 
 function Driver:sendTable(t)
-	self.pipe:msg(serializeTable(t))
+	self.pipe:msg(t)
 end
 
 function Driver:handle(t)
