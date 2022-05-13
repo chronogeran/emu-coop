@@ -9,21 +9,13 @@ local MapTileSize = 0x20
 
 -- Pixels are stored 4 bits per pixel,
 -- 8x8 pixel tiles
-function getPixelByteIndex(x, y)
-	local tileRowIndex = math.floor(y / 8)
-	local tileColIndex = math.floor(x / 8)
-	return 0x10f040 + tileRowIndex * 0x400 + tileColIndex * 0x20 + (y % 8) * 4 + math.floor((x % 8) / 2)
-end
-
--- Pixels are stored 4 bits per pixel,
--- 8x8 pixel tiles
-function pixelDataOffset(x, y)
+local function pixelDataOffset(x, y)
 	local tileRowIndex = math.floor(y / 8)
 	local tileColIndex = math.floor(x / 8)
 	return MapPixelDataAddress + tileRowIndex * MapTileRowSize + tileColIndex * MapTileSize + (y % 8) * 4 + math.floor((x % 8) / 2)
 end
 
-function pixelCoordinates(pixelOffset)
+local function pixelCoordinates(pixelOffset)
 	local localOffset = pixelOffset - MapPixelDataAddress
 	local tileX = math.floor((localOffset % MapTileRowSize) / MapTileSize)
 	local pixelX = (tileX * 8) + (localOffset % 4) * 2
@@ -45,7 +37,7 @@ spec.custom["mapData"] = function(payload)
 	end
 end
 
-function sendMapData(localOffset)
+local function sendMapData(localOffset)
 	local pixelX, pixelY = pixelCoordinates(MapPixelDataAddress + localOffset)
 	local payload = {memory.readbyte(CurrentMapIdAddress), pixelX, pixelY}
 	local i = 4
