@@ -12,6 +12,7 @@ function readsettings(filename)
 
 	local defaults = {["isServer"]=false, ["server"]="127.0.0.1", ["port"]="5968", ["nickname"]="User"..math.random(99999)}
 	local f = io.open(filename)
+	if not f then return defaults end
 	readline(f, defaults, "isServer")
 	readline(f, defaults, "server")
 	readline(f, defaults, "port")
