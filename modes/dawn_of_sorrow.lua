@@ -24,7 +24,7 @@ require("modes.ds_castlevania_base")
 addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, spec)
 
 -- Boss Fights
-spec.sync[0x020f7038] = {size=4, kind="bitOr"}
+spec.sync[0x020f7038] = {size=4, kind="bitOr", verb="defeated", nameBitmap={"", "Flying Armor", "Balore", "Dmitrii", "Malphas", "Dario", "Puppet Master", "", "", "Zephyr", "", "Dario/Aguni"}} -- TODO Death, Abaddon, Paranoia, Rahab, Giant Bat, Gergoth
 
 -- Souls inventory
 for i=0,0x34,4 do
@@ -33,7 +33,7 @@ end
 
 -- Ability souls
 -- Equip abilities when receiving them
-spec.sync[0x020f7108] = {size=4, kind="delta",
+spec.sync[0x020f7108] = {size=4, kind="delta", nameBitmap={[17]="Balore Ability", [21]="Malphas Ability", [25]="Doppelganger Ability", [29]="Rahab Ability"},
 	receiveTrigger=function (value, previousValue)
 		local val = SHIFT(value, 16)
 		local bitsToSet = 0
@@ -45,11 +45,11 @@ spec.sync[0x020f7108] = {size=4, kind="delta",
 		end
 		if bitsToSet ~= 0 then
 			local currentEquips = memory.readbyte(0x020f741e)
-			memory.writebyte(0x0f741e, OR(currentEquips, bitsToSet))
+			memory.writebyte(0x020f741e, OR(currentEquips, bitsToSet))
 		end
 	end
 }
-spec.sync[0x020f710c] = {size=4, kind="delta",
+spec.sync[0x020f710c] = {size=4, kind="delta", nameBitmap={[1]="Hippogryph Ability", [5]="Procel Ability", [9]="Mud Demon Ability"},
 	receiveTrigger=function (value, previousValue)
 		local val = value
 		local bitsToSet = 0
@@ -61,9 +61,8 @@ spec.sync[0x020f710c] = {size=4, kind="delta",
 		end
 		if bitsToSet ~= 0 then
 			local currentEquips = memory.readbyte(0x020f741e)
-			memory.writebyte(0x0f741e, OR(currentEquips, bitsToSet))
+			memory.writebyte(0x020f741e, OR(currentEquips, bitsToSet))
 		end
-		
 	end
 }
 
@@ -82,16 +81,15 @@ end
 
 -- Flags
 -- Area visit flags (for area name popup) (7183)
-spec.sync[0x020f7180] = {size=4, kind="bitOr"}
+spec.sync[0x020f7180] = {size=4, kind="bitOr", verb="visited", nameBitmap={[29]="Lost Village",[30]="Wizardry Lab", [31]="Garden of Madness", [32]="The Dark Chapel"}}
 -- Room type tutorials (7187)
-spec.sync[0x020f7184] = {size=4, kind="bitOr"}
+spec.sync[0x020f7184] = {size=4, kind="bitOr", verb="visited", nameBitmap={"Demon Guest House", "Condemned Tower", "Mine of Judgment", "", "Subterranean Hell", "Silenced Ruins", "The Pinnacle", ""}} -- TODO Cursed Clock Tower, Abyss
 -- Events, item pickups
--- RC
 for i=0,0x1f do
 	spec.sync[0x020f7188 + i] = {kind="bitOr"}
 end
 -- Warp Rooms visited
-spec.sync[0x020f71a8] = {size=4, kind="bitOr"}
+spec.sync[0x020f71a8] = {size=4, kind="bitOr", verb="discovered", nameBitmap={"Lost Village Warp Room", "Demon Guest House Warp Room","Wizardry Lab Warp Room","Garden of Madness Warp Room","The Dark Chapel Warp Room","Condemned Tower Warp Room","Mine of Judgment Warp Room","Subterranean Hell Warp Room","Silenced Ruins Warp Room","Cursed Clock Tower Warp Room","The Pinnacle Warp Room","The Abyss Warp Room"}}
 
 -- Item Inventory
 for i=0,0x68,4 do
@@ -99,7 +97,7 @@ for i=0,0x68,4 do
 end
 
 -- Magic Seals
-spec.sync[0x020f7254] = {kind="bitOr"}
+spec.sync[0x020f7254] = {kind="bitOr", nameBitmap={"Magic Seal 1", "Magic Seal 2", "Magic Seal 3", "Magic Seal 4", "Magic Seal 5"}}
 -- Soul type tutorials
 spec.sync[0x020f7255] = {kind="bitOr"}
 
