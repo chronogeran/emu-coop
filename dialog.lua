@@ -44,20 +44,21 @@ if BizHawk then
 		function onclose()
 			done = true
 		end
-		local f = forms.newform(500, 200, "Connection Settings", onclose)
+		local f = forms.newform(500, 210, "Connection Settings", onclose)
 		local h_isServer = forms.checkbox(f, "Start Server", 5, 5)
 		if defaults.isServer then forms.setproperty(h_isServer, "Checked", true) end
 		local h_serverName = forms.textbox(f, defaults.server, 100, 25, nil, 5, 35)
 		local h_port = forms.textbox(f, defaults.port, 50, 25, nil, 5, 65)
-		local h_nickname = forms.textbox(f, defaults.nickname, 50, 25, nil, 5, 95)
+		local h_nickname = forms.textbox(f, defaults.nickname, 100, 25, nil, 5, 95)
 		function onOk()
 			result = {}
 			result.startAsServer = forms.ischecked(h_isServer)
 			result.server = forms.gettext(h_serverName)
 			result.port = tonumber(forms.gettext(h_port))
+			result.nickname = forms.gettext(h_nickname)
 			forms.destroy(f)
 		end
-		local h_ok = forms.button(f, "OK", onOk, 5, 95, 75, 30)
+		local h_ok = forms.button(f, "OK", onOk, 5, 125, 75, 30)
 
 		while not done do
 			emu.frameadvance()
@@ -134,7 +135,8 @@ else
 		local res, startAsServer, server, port = iup.GetParam("Connection Settings", nil,
 			"Start Server: %" .. optionLetter .. "|No|Yes|\n" ..
 			"Connect Server: %s\n" ..
-			"Connect Port: %i\n", startServer, defaults.server, defaults.port)
+			"Connect Port: %i\n" ..
+			"Nickname: %s\n", startServer, defaults.server, defaults.port, defaults.nickname)
 		if res == 0 then return nil end
 		return {startAsServer=startAsServer == 1, server=server, port=port}
 	end

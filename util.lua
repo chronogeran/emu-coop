@@ -7,7 +7,7 @@ function nonzero(s) return s and s ~= 0 end
 
 local currentError = nil
 local currentMessages = List()
-local MESSAGE_DURATION = 600
+local MESSAGE_DURATION = 60
 
 -- Set the current message (optionally, make it an error)
 function message(msg, isError)

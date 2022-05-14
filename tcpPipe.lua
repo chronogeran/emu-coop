@@ -21,7 +21,7 @@ end
 function TcpClientPipe:getPartnerName(clientId)
 	for i=1,#self.playerlist do
 		if self.playerlist[i].id == clientId then
-			return self.clients[i].nickname
+			return self.playerlist[i].nickname
 		end
 	end
 	return "Partner"
@@ -235,18 +235,17 @@ function TcpServerPipe:send(s)
 	end
 end
 
-function TcpServerPipe:sendPlayerList(exceptToClient)
-	local reg = {"playerlist",list={{id=0, nickname=self.data.nickname}}
+function TcpServerPipe:sendPlayerList()
+	local reg = {"playerlist",list={{id=0, nickname=self.data.nickname}}}
 	for i=1,#self.clients do
 		table.insert(reg.list, {id=self.clients[i].id, nickname=self.clients[i].nickname})
 	end
 
 	local s = serializeTable(reg)
+	-- Send to everyone including new guy so he gets server's name and other existing players
 	for i=#self.clients,1,-1 do
-		if self.clients[i] ~= exceptToClient then
-			if not self.clients[i]:send(s, true) then
-				table.remove(self.clients, i)
-			end
+		if not self.clients[i]:send(s, true) then
+			table.remove(self.clients, i)
 		end
 	end
 end
@@ -262,12 +261,12 @@ function TcpServerPipe:handle(s, originClient)
 		originClient.nickname = t.nickname
 		if pipeDebug then print("Registered " .. originClient.nickname) end
 		-- Don't need to replicate hello out, but we do need to update playerlist
-		self:sendPlayerList(originClient)
+		self:sendPlayerList()
 		return
 	end
 
 	-- Set client ID of message (always byte 2)
-	s[2] = string.char(originClient.id)
+	s = replace_char(2, s, string.char(originClient.id))
 
 	-- Send to all other clients
 	for i=#self.clients,1,-1 do
@@ -359,6 +358,10 @@ function readNumberFromBuffer(s, offset, size)
 	return value
 end
 
+function replace_char(pos, str, r)
+	return str:sub(1, pos-1) .. r .. str:sub(pos+1)
+end
+
 function serializeTable(t)
 	local s = ""
 	if t[1] then
@@ -396,6 +399,9 @@ function serializeTable(t)
 		if type(t.value) == "table" then opcode = opcode + 6
 		elseif t.value < 0 then opcode = opcode + 3 end
 		s = string.char(opcode)
+
+		-- Client ID. Always 0 because clients don't know, and server is 0
+		s = s .. string.char(0)
 
 		-- Address
 		local addr = t.addr

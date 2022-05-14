@@ -358,7 +358,8 @@ function GameDriver:handleTable(t)
 					names = {name}
 				elseif record.nameBitmap then
 					names = {}
-					for b=0,7 do
+					local maxBit = (8 * (record.size or 1)) - 1
+					for b=0,maxBit do
 						if 0 ~= AND(BIT(b), value) and 0 == AND(BIT(b), previousValue) then
 							table.insert(names, record.nameBitmap[b + 1])
 						end
