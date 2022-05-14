@@ -20,8 +20,10 @@ local CurrentMapIdAddress = 0x02111785
 local MapExplorationDataAddress = 0x02111794
 local MapPixelDataAddress = 0x02136900
 local MapExplorationDataExtent = 0x1d8
+local MapXAddress = 0x020c8927 -- TODO
+local MapYAddress = 0x020c8925 -- TODO
 require("modes.ds_castlevania_base")
-addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, spec)
+addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec)
 
 -- Boss Fights
 spec.sync[0x021119dc] = {size=4, kind="bitOr"}

@@ -1,7 +1,7 @@
 -- Author: Chronogeran
 -- Common functionality for DS castlevania games to update the map graphics as they are revealed by other players
 
-function addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, spec)
+function addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec)
 
 local MapPixelDataSize = 0x6000
 local MapTileRowSize = 0x400
@@ -24,9 +24,54 @@ local function pixelCoordinates(pixelOffset)
 	return pixelX, pixelY
 end
 
+local function readSinglePixel(x, y)
+	local offset = pixelDataOffset(x, y)
+	local current = memory.readbyte(offset)
+	if x % 2 == 1 then
+		-- Odd, high
+		return AND(0xf, SHIFT(current, 4))
+	else
+		-- Even, low
+		return AND(0xf, current)
+	end
+end
+
+local function writeSinglePixel(x, y, value)
+	local offset = pixelDataOffset(x, y)
+	local p = value
+	local current = memory.readbyte(offset)
+	if x % 2 == 1 then
+		-- Odd, high
+		p = OR(SHIFT(value, -4), AND(0xf, current))
+	else
+		-- Even, low
+		p = OR(value, AND(0xf0, current))
+	end
+	memory.writebyte(offset, p)
+end
+
+local function updatePixels(pixels)
+	pixels[1] = readSinglePixel(pixels.x,     pixels.y)
+	pixels[2] = readSinglePixel(pixels.x + 1, pixels.y)
+	pixels[3] = readSinglePixel(pixels.x,     pixels.y + 1)
+	pixels[4] = readSinglePixel(pixels.x + 1, pixels.y + 1)
+end
+
+local pixelsByClientId = {}
+
+local function drawAllFriends()
+	for k,v in pairs(pixelsByClientId) do
+		writeSinglePixel(v.x,     v.y,     2)
+		writeSinglePixel(v.x + 1, v.y,     2)
+		writeSinglePixel(v.x,     v.y + 1, 2)
+		writeSinglePixel(v.x + 1, v.y + 1, 2)
+	end
+end
+
 spec.custom["mapData"] = function(payload)
 	local mapId, pixelX, pixelY = payload[1], payload[2], payload[3]
 	if mapId ~= memory.readbyte(CurrentMapIdAddress) then return end
+	-- Update map
 	local i = 4
 	for y=pixelY, pixelY + 4 do
 		for x=pixelX, pixelX + 4, 2 do
@@ -35,6 +80,15 @@ spec.custom["mapData"] = function(payload)
 			i = i + 1
 		end
 	end
+	-- Write true background pixels right after update
+	-- this gets messier when sender also has someone else in the room, but that shouldn't happen since they're the one who revealed the room
+	for k,v in pairs(pixelsByClientId) do
+		if v.mapId == mapId and ((v.x >= pixelX - 1 and v.x <= pixelX + 4) or (v.y >= pixelY - 1 and v.y <= pixelY + 4)) then
+			updatePixels(v)
+		end
+	end
+	-- Redraw friends as one was pasted over
+	drawAllFriends()
 end
 
 local function sendMapData(localOffset)
@@ -57,16 +111,63 @@ for i=0,MapExplorationDataExtent,2 do
 	spec.sync[MapExplorationDataAddress + i] = {kind="bitOr", size=2, writeTrigger=function(value, previousValue)
 		if value == previousValue then return end
 		local pixelDataBefore = memory.read_bytes_as_array(MapPixelDataAddress, MapPixelDataSize)
-		mainDriver:executeNextFrame(function()
+		mainDriver:executeAfterFrames(function()
 			local pixelDataAfter = memory.read_bytes_as_array(MapPixelDataAddress, MapPixelDataSize)
 			for i=2,MapPixelDataSize do
 				if pixelDataBefore[i] ~= pixelDataAfter[i] then
-					sendMapData(i - 1) -- account for 1-based array
+					local offset = i - 1 -- account for 1-based array
+					offset = offset - (offset % 2) -- always align with a square
+					sendMapData(offset)
 					return
 				end
 			end
-		end)
+		end, 3)
 	end}
 end
+
+-- Show friends on map
+
+spec.custom["mapPosition"] = function(payload, clientId)
+	local mapId, pixelX, pixelY = payload[1], payload[2], payload[3]
+	-- Repaint old pixels
+	if pixelsByClientId[clientId] then
+		local old = pixelsByClientId[clientId]
+		writeSinglePixel(old.x,     old.y,     old[1])
+		writeSinglePixel(old.x + 1, old.y,     old[2])
+		writeSinglePixel(old.x,     old.y + 1, old[3])
+		writeSinglePixel(old.x + 1, old.y + 1, old[4])
+	end
+
+	if mapId ~= memory.readbyte(CurrentMapIdAddress) then return end
+	-- TODO handle changing map on my side
+
+	-- Record pixels
+	local pixels = {}
+	pixels.x = pixelX
+	pixels.y = pixelY
+	pixels.mapId = mapId
+	updatePixels(pixels)
+	pixelsByClientId[clientId] = pixels
+
+	-- Draw new pixels
+	drawAllFriends()
+end
+
+local function sendMapPosition()
+	send("mapPosition", {memory.readbyte(CurrentMapIdAddress), memory.readbyte(MapXAddress) + 16, memory.readbyte(MapYAddress) + 16})
+end
+
+spec.sync[MapXAddress] = {kind="trigger", writeTrigger=function(value, previousValue)
+	if value == previousValue then return end
+	-- Check for valid coordinates TODO test other games
+	if value == 0 then return end
+	sendMapPosition()
+end}
+spec.sync[MapYAddress] = {kind="trigger", writeTrigger=function(value, previousValue)
+	if value == previousValue then return end
+	-- Check for valid coordinates TODO test other games
+	if memory.readbyte(MapXAddress) == 0 then return end
+	sendMapPosition()
+end}
 
 end

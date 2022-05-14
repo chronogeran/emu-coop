@@ -146,6 +146,7 @@ function GameDriver:_init(spec, forceSend)
 	self.spec = spec
 	self.sleepQueue = {}
 	self.nextFrameTasks = {}
+	self.tasks = {}
 	self.forceSend = forceSend
 	self.didCache = false
 end
@@ -181,10 +182,22 @@ function GameDriver:executeNextFrame(f)
 	table.insert(self.nextFrameTasks, f)
 end
 
+function GameDriver:executeAfterFrames(f, n)
+	table.insert(self.tasks, {f=f, n=n})
+end
+
 function GameDriver:childTick()
 	-- Execute queued tasks
 	for k,v in pairs(self.nextFrameTasks) do v() end
 	self.nextFrameTasks = {}
+	for i=#self.tasks,1,-1 do
+		local task = self.tasks[i]
+		task.n = task.n - 1
+		if task.n == 0 then
+			task.f()
+			table.remove(self.tasks, i)
+		end
+	end
 
 	if self:isRunning() then
 		self:checkFirstRunning()
@@ -273,9 +286,6 @@ function GameDriver:isRunning()
 end
 
 function GameDriver:caughtWrite(addr, arg2, record, size)
-	local pv = cache[addr] or 0
-	local v = memoryRead(addr, size)
-	if v ~= pv then print(string.format("%x (size %d) changed from %x to %x", addr, size, pv, v)) end
 	local running = self.spec.running
 
 	if self:isRunning() then -- TODO: Yes, we got record, but double check
@@ -302,6 +312,8 @@ function GameDriver:caughtWrite(addr, arg2, record, size)
 
 			self:sendTable {addr=addr, value=sendValue}
 		end
+		-- Also update cache for trigger types
+		if record.kind == "trigger" then cache[addr] = value end
 	else
 		if driverDebug then print("Ignored memory write because the game is not running") end
 	end
@@ -320,7 +332,7 @@ function GameDriver:handleTable(t)
 			if t[2] then
 				local f = self.spec.custom and self.spec.custom[t[2]]
 				if f then
-					f(t[3])
+					f(t[3], t[4])
 				else
 					print("Unrecognized custom message from partner: " .. t[2])
 				end

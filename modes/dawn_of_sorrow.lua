@@ -20,8 +20,10 @@ local CurrentMapIdAddress = 0x020f6e25
 local MapExplorationDataAddress = 0x020f6e34
 local MapPixelDataAddress = 0x0210f040
 local MapExplorationDataExtent = 0x19b
+local MapXAddress = 0x020c8926
+local MapYAddress = 0x020c8924
 require("modes.ds_castlevania_base")
-addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, spec)
+addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec)
 
 -- Boss Fights
 spec.sync[0x020f7038] = {size=4, kind="bitOr", verb="defeated", nameBitmap={"", "Flying Armor", "Balore", "Dmitrii", "Malphas", "Dario", "Puppet Master", "", "", "Zephyr", "", "Dario/Aguni"}} -- TODO Death, Abaddon, Paranoia, Rahab, Giant Bat, Gergoth

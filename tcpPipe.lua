@@ -253,6 +253,11 @@ end
 function TcpServerPipe:handle(s, originClient)
 	if pipeDebug then print("RECV: " .. toHexString(s)) end
 
+	if s:byte(1) ~= 1 then
+		-- Set client ID of message (always byte 2)
+		s = replace_char(2, s, string.char(originClient.id))
+	end
+
 	-- Handle for local game
 	t = deserializeTable(s)
 	self.driver:handle(t)
@@ -264,9 +269,6 @@ function TcpServerPipe:handle(s, originClient)
 		self:sendPlayerList()
 		return
 	end
-
-	-- Set client ID of message (always byte 2)
-	s = replace_char(2, s, string.char(originClient.id))
 
 	-- Send to all other clients
 	for i=#self.clients,1,-1 do

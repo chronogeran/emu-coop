@@ -38,8 +38,10 @@ local CurrentMapIdAddress = 0x020ffcb9
 local MapExplorationDataAddress = 0x02100144
 local MapPixelDataAddress = 0x0214b1e0
 local MapExplorationDataExtent = 0x168
+local MapXAddress = 0x020c8927 -- TODO
+local MapYAddress = 0x020c8925 -- TODO
 require("modes.ds_castlevania_base")
-addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, spec)
+addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec)
 
 -- Bestiary: enemies defeated
 for i=0,0xf,4 do
