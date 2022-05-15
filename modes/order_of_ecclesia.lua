@@ -40,6 +40,13 @@ local MapPixelDataAddress = 0x0214b1e0
 local MapExplorationDataExtent = 0x168
 local MapXAddress = 0x020c8927 -- TODO
 local MapYAddress = 0x020c8925 -- TODO
+local GetMapCoords = function() -- TODO
+	local xInRoom,yInRoom = memory.readbyte(MapXAddress),memory.readbyte(MapYAddress)
+	local x = memory.readbyte(0x0211177c) * 4 + 16 + math.floor((xInRoom % 0x10) / 4)
+	local y = memory.readbyte(0x02111780) * 4 + 16 + math.floor((yInRoom % 0x10) / 4)
+	return x,y
+end
+local AreCoordsValid = function() return true end -- TODO
 require("modes.ds_castlevania_base")
 addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec)
 

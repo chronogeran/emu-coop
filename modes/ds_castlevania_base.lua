@@ -1,7 +1,7 @@
 -- Author: Chronogeran
 -- Common functionality for DS castlevania games to update the map graphics as they are revealed by other players
 
-function addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec)
+function addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec, GetMapCoords, AreCoordsValid)
 
 local MapPixelDataSize = 0x6000
 local MapTileRowSize = 0x400
@@ -142,6 +142,8 @@ spec.custom["mapPosition"] = function(payload, clientId)
 	-- TODO handle changing map on my side
 
 	-- Record pixels
+	-- TODO handle multiple players in the same spot. Have to get true background pixels.
+	-- Maybe just keep a legit copy of the proper map data as it gets revealed and use that?
 	local pixels = {}
 	pixels.x = pixelX
 	pixels.y = pixelY
@@ -153,21 +155,43 @@ spec.custom["mapPosition"] = function(payload, clientId)
 	drawAllFriends()
 end
 
-local function sendMapPosition()
-	send("mapPosition", {memory.readbyte(CurrentMapIdAddress), memory.readbyte(MapXAddress) + 16, memory.readbyte(MapYAddress) + 16})
-end
+local previousX,previousY = 0
+local sendMapPosThisFrame = false
 
+local function sendMapPosition()
+	local x,y = GetMapCoords()
+	--if x ~= previousX or y ~= previousY then
+		--previousX,previousY = x,y
+		send("mapPosition", {memory.readbyte(CurrentMapIdAddress), x, y})
+	--end
+end
+--[[
 spec.sync[MapXAddress] = {kind="trigger", writeTrigger=function(value, previousValue)
 	if value == previousValue then return end
-	-- Check for valid coordinates TODO test other games
-	if value == 0 then return end
-	sendMapPosition()
+	if not AreCoordsValid() then return end
+	sendMapPosThisFrame = true
 end}
 spec.sync[MapYAddress] = {kind="trigger", writeTrigger=function(value, previousValue)
 	if value == previousValue then return end
-	-- Check for valid coordinates TODO test other games
-	if memory.readbyte(MapXAddress) == 0 then return end
-	sendMapPosition()
+	if not AreCoordsValid() then return end
+	sendMapPosThisFrame = true
 end}
+--]]
+
+spec.tick = function()
+	-- TODO test this still works with DoS
+	-- Only want to trigger update once per frame
+	-- PoR is still a bit glitchy sometimes, especially when changing rooms
+	local x,y = GetMapCoords()
+	if x ~= previousX or y ~= previousY then
+		previousX,previousY = x,y
+		sendMapPosThisFrame = true
+		return
+	end
+	if sendMapPosThisFrame then
+		sendMapPosition()
+		sendMapPosThisFrame = false
+	end
+end
 
 end

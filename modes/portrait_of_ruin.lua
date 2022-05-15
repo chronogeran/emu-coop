@@ -20,10 +20,24 @@ local CurrentMapIdAddress = 0x02111785
 local MapExplorationDataAddress = 0x02111794
 local MapPixelDataAddress = 0x02136900
 local MapExplorationDataExtent = 0x1d8
-local MapXAddress = 0x020c8927 -- TODO
-local MapYAddress = 0x020c8925 -- TODO
+local MapXAddress = 0x020fcab2
+local MapYAddress = 0x020fcab6
+local GetMapCoords = function()
+	local isCharlotte = memory.readbyte(0x02111f56) == 1
+	local xInRoomAddress,yInRoomAddress = 0x020fcab2,0x020fcab6
+	local mapTileXAddress,mapTileYAddress = 0x0211177c,0x02111780
+	if isCharlotte then
+		xInRoomAddress,yInRoomAddress = 0x020fcc12,0x020fcc16
+		mapTileXAddress,mapTileYAddress = 0x0211177e,0x02111782
+	end
+	local xInRoom,yInRoom = memory.readbyte(xInRoomAddress),memory.readbyte(yInRoomAddress)
+	local x = memory.readbyte(mapTileXAddress) * 4 + 17 + math.floor((xInRoom % 0x10) / 4)
+	local y = memory.readbyte(mapTileYAddress) * 4 + 16 + math.floor((yInRoom % 0xc) / 3)
+	return x,y
+end
+local AreCoordsValid = function() return true end
 require("modes.ds_castlevania_base")
-addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec)
+--addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec, GetMapCoords, AreCoordsValid)
 
 -- Boss Fights
 spec.sync[0x021119dc] = {size=4, kind="bitOr"}
