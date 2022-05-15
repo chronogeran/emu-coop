@@ -50,14 +50,40 @@ local function writeSinglePixel(x, y, value)
 	memory.writebyte(offset, p)
 end
 
+local function theseOverlap(p1, p2)
+	return p1.x <= p2.x + 1 and p1.x >= p2.x - 1 and p1.y <= p2.y + 1 and p1.y >= p2.y - 1
+end
+
+local function copyApplicablePixels(from, to)
+	if not theseOverlap(from, to) then return end
+	local relativeX = to.x - from.x
+	local relativeY = to.y - from.y
+	local relativeIndex = relativeX + (relativeY * 2)
+	local topLeftIndex = 1 + relativeIndex
+	local topRightIndex = 2 + relativeIndex
+	local bottomLeftIndex = 3 + relativeIndex
+	local bottomRightIndex = 4 + relativeIndex
+	if relativeX >= 0  and relativeX <= 1 and from[topLeftIndex]     then to[1] = from[topLeftIndex] end
+	if relativeX >= -1 and relativeX <= 0 and from[topRightIndex]    then to[2] = from[topRightIndex] end
+	if relativeX >= 0  and relativeX <= 1 and from[bottomLeftIndex]  then to[3] = from[bottomLeftIndex] end
+	if relativeX >= -1 and relativeX <= 0 and from[bottomRightIndex] then to[4] = from[bottomRightIndex] end
+end
+
+local pixelsByClientId = {}
+
 local function updatePixels(pixels)
 	pixels[1] = readSinglePixel(pixels.x,     pixels.y)
 	pixels[2] = readSinglePixel(pixels.x + 1, pixels.y)
 	pixels[3] = readSinglePixel(pixels.x,     pixels.y + 1)
 	pixels[4] = readSinglePixel(pixels.x + 1, pixels.y + 1)
+	-- After reading from the map, read from any other overlapp;ing players so we don't use
+	-- their dot as the background
+	for k,v in pairs(pixelsByClientId) do
+		if v ~= pixels then
+			copyApplicablePixels(v, pixels)
+		end
+	end
 end
-
-local pixelsByClientId = {}
 
 local function drawAllFriends()
 	for k,v in pairs(pixelsByClientId) do
@@ -142,8 +168,6 @@ spec.custom["mapPosition"] = function(payload, clientId)
 	-- TODO handle changing map on my side
 
 	-- Record pixels
-	-- TODO handle multiple players in the same spot. Have to get true background pixels.
-	-- Maybe just keep a legit copy of the proper map data as it gets revealed and use that?
 	local pixels = {}
 	pixels.x = pixelX
 	pixels.y = pixelY

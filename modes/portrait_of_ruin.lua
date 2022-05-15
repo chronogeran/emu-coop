@@ -37,7 +37,7 @@ local GetMapCoords = function()
 end
 local AreCoordsValid = function() return true end
 require("modes.ds_castlevania_base")
---addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec, GetMapCoords, AreCoordsValid)
+addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec, GetMapCoords, AreCoordsValid)
 
 -- Boss Fights
 spec.sync[0x021119dc] = {size=4, kind="bitOr"}
