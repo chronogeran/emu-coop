@@ -120,7 +120,7 @@ function performTest(record, valueOverride, sizeOverride)
 	if type(record) == "function" then
 		return record(valueOverride, sizeOverride)
 	elseif record[1] == "test" then
-		if record.addr + (sizeOverride or record.size) >= memory.getbussize() then return false end
+		if record.addr + (sizeOverride or record.size or 1) >= memory.getbussize() then return false end
 		local value = valueOverride or memoryRead(record.addr, sizeOverride or record.size)
 		return (not record.gte or value >= record.gte) and
 			   (not record.lte or value <= record.lte)
