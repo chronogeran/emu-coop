@@ -8,7 +8,7 @@ To run, run coop.lua. To run with additional debug messages (more verbose errors
 
 ## Supported Emulators
 
-**Imporant: This is built to run with a fork of BizHawk. [Download it here.](https://github.com/chronogeran/BizHawk)**
+**Imporant: This is built to run with a fork of BizHawk. [Download it here.](https://github.com/chronogeran/emu-coop/releases)**
 
 Please note that not every core in BizHawk is supported. Use the indicated core when playing the given console.
 

@@ -44,6 +44,7 @@ local GetMapCoords = function()
 	return memory.readbyte(MapXAddress), memory.readbyte(MapYAddress)
 end
 local AreCoordsValid = function() return true end -- TODO?
+-- FIXME map drawing smears (leaves traces of buddy when buddy reveals new rooms). Specific to OoE.
 require("modes.ds_castlevania_base")
 addMap(CurrentMapIdAddress, MapExplorationDataAddress, MapPixelDataAddress, MapExplorationDataExtent, MapXAddress, MapYAddress, spec, GetMapCoords, AreCoordsValid)
 
