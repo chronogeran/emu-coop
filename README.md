@@ -47,6 +47,16 @@ Currently supported emulators/consoles:
 
 Contributions adding more games are welcome. Any game with a good degree of non-linearity or backtracking will work.
 
+## List of changes from base emu-coop
+
+* Implemented raw TCP protocol
+* Support for more than 2 players
+* Support for BizHawk
+* Added games
+* Added 'flags' type
+* Added writeword support for FCEUX
+* Fix writeTrigger's previousValue
+
 ## See Also
 
 Other similar projects providing access to multiplayer modes:

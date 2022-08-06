@@ -184,26 +184,10 @@ local sendMapPosThisFrame = false
 
 local function sendMapPosition()
 	local x,y = GetMapCoords()
-	--if x ~= previousX or y ~= previousY then
-		--previousX,previousY = x,y
-		send("mapPosition", {memory.readbyte(CurrentMapIdAddress), x, y})
-	--end
+	send("mapPosition", {memory.readbyte(CurrentMapIdAddress), x, y})
 end
---[[
-spec.sync[MapXAddress] = {kind="trigger", writeTrigger=function(value, previousValue)
-	if value == previousValue then return end
-	if not AreCoordsValid() then return end
-	sendMapPosThisFrame = true
-end}
-spec.sync[MapYAddress] = {kind="trigger", writeTrigger=function(value, previousValue)
-	if value == previousValue then return end
-	if not AreCoordsValid() then return end
-	sendMapPosThisFrame = true
-end}
---]]
 
 spec.tick = function()
-	-- TODO test this still works with DoS
 	-- Only want to trigger update once per frame
 	-- PoR is still a bit glitchy sometimes, especially when changing rooms
 	local x,y = GetMapCoords()
