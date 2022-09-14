@@ -7,7 +7,7 @@
 -- This file is available under Creative Commons CC0
 
 local spec = {
-	guid = "e3d39049-71a8-42f7-9675-ddf9715ba14e",
+	guid = "7844d826-c96d-4c04-abaf-6bd068b473ce",
 	format = "1.2",
 	name = "Castlevania: Order of Ecclesia",
 	match = {"stringtest", addr=0x023ffa80, value="CASTLEVANIA3YR9E"},
@@ -61,12 +61,19 @@ for i=0,0xf,4 do
 	spec.sync[0x02100364 + i] = {size=4, kind="bitOr"}
 end
 
--- RC
--- Flags (area visit flags, events, item pickups, area unlocks, boss fights)
-for i=0,0x6f,4 do
+-- Flags (area visit flags, events, item pickups)
+for i=0,0x4f,4 do
 	spec.sync[0x02100378 + i] = {size=4, kind="bitOr"}
 end
 -- 3d8 may not be something I need?
+
+-- Area Unlocks
+for i=0,4 do
+	spec.sync[0x021003cc + i] = {size=1, kind="bitOr"}
+end
+
+-- Bosses
+spec.sync[0x021003e4] = {size=2, kind="bitOr"}
 
 -- Glyphs
 for i=0,0x31,4 do
